@@ -180,21 +180,6 @@ export async function insertShift(shift) {
     return data;
 }
 
-export async function deleteShift(id) {
-    if (isPlaceholder) {
-        const db = getLocalDB();
-        db.shifts = db.shifts.filter(s => s.id !== id);
-        saveLocalDB(db);
-        return true;
-    }
-    const { error } = await supabase
-        .from('shifts')
-        .delete()
-        .eq('id', id);
-    if (error) throw error;
-    return true;
-}
-
 // --- AUDIT LOGS CLIENT METHODS ---
 export async function getAuditLogs() {
     if (isPlaceholder) {
@@ -243,12 +228,28 @@ export async function insertUser(user) {
         saveLocalDB(db);
         return user;
     }
+
+    // Create a temporary Supabase client with persistSession: false to avoid logging out the current admin
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    const tempSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: { persistSession: false }
+    });
+
+    const email = `${user.username.toLowerCase()}@portaldent.com`;
+    const { data: authData, error: authError } = await tempSupabase.auth.signUp({
+        email: email,
+        password: user.password
+    });
+
+    if (authError) throw authError;
+
     const profileData = {
-        id: user.id,
+        id: authData.user.id, // Real UUID from Supabase Auth
         name: user.name,
         username: user.username,
         role: user.role
     };
+
     const { data, error } = await supabase
         .from('profiles')
         .insert([profileData])
