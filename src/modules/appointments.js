@@ -1,53 +1,69 @@
-/* appointments.js - Scheduling & Booking Business Rules */
+/* appointments.js - Appointments scheduling business module with Async constraints */
 
-export function isWithinFourHours(apptDateStr, apptTimeStr, systemTime) {
-    const apptDateTime = new Date(`${apptDateStr}T${apptTimeStr}:00-05:00`);
-    const diffMs = apptDateTime - systemTime;
+import { insertAppointment, updateAppointment, deleteAppointment } from '../utils/storage.js';
+
+export function isWithinFourHours(dateStr, timeStr, currentDateTime) {
+    const apptDateTime = new Date(`${dateStr}T${timeStr}:00`);
+    const diffMs = apptDateTime - currentDateTime;
     const diffHours = diffMs / (1000 * 60 * 60);
+    // Returns true if the difference is positive and less than 4 hours
     return diffHours >= 0 && diffHours < 4;
 }
 
-export function saveAppointment(apptData, state, systemTime) {
-    const { id, patientId, reason, dentistId, depositPaid, date, time } = apptData;
+export async function saveAppointment(apptData, state, currentDateTime) {
+    const { id, patientId, dentistId, date, time, reason, depositPaid, depositAmount } = apptData;
 
-    // 1. Check deposit paid validation
-    if (!depositPaid) {
-        throw new Error("Debe activar la verificación de pago (S/ 50.00) para confirmar la cita.");
+    if (!patientId || !dentistId || !date || !time || !reason) {
+        throw new Error("Todos los campos obligatorios de la cita deben ser completados.");
     }
 
-    if (!patientId) {
-        throw new Error("Debe seleccionar un paciente de la lista.");
-    }
-
+    // Retrieve full entity references
     const patient = state.patients.find(p => p.id === patientId);
-    if (!patient) throw new Error("Paciente no encontrado.");
-
     const dentist = state.users.find(u => u.id === dentistId);
+
+    if (!patient) throw new Error("Paciente no encontrado.");
     if (!dentist) throw new Error("Odontólogo no encontrado.");
 
+    // Enforce 4h clinical limit for modifications
     if (id) {
-        // RESCHEDULE / EDIT
-        const appt = state.appointments.find(a => a.id === id);
-        if (!appt) throw new Error("Cita no encontrada.");
+        const existing = state.appointments.find(a => a.id === id);
+        if (existing) {
+            // Check if modification is within 4 hours of the original appointment time
+            if (isWithinFourHours(existing.date, existing.time, currentDateTime)) {
+                throw new Error("LÍMITE CLÍNICO: No se pueden modificar o reprogramar citas a menos de 4 horas de su inicio.");
+            }
+        }
+    }
 
-        // Check 4-hour limit on the original slot before permitting changes
-        if (isWithinFourHours(appt.date, appt.time, systemTime)) {
-            throw new Error(`ERROR OPERATIVO: No se puede modificar ni reagendar una cita programada a menos de 4 horas de su inicio (${appt.time}).`);
+    if (id) {
+        // UPDATE EXISTING APPOINTMENT
+        const idx = state.appointments.findIndex(a => a.id === id);
+        if (idx === -1) throw new Error("Cita no encontrada.");
+
+        // Check for double booking conflicts (excluding this appointment)
+        const conflict = state.appointments.find(a => a.date === date && a.time === time && a.dentistId === dentistId && a.id !== id);
+        if (conflict) {
+            throw new Error("Conflicto de Horario: El odontólogo ya cuenta con una reserva activa en este bloque.");
         }
 
-        // Apply changes
-        appt.patientId = patientId;
-        appt.patientName = `${patient.firstname} ${patient.lastname}`;
-        appt.patientDni = patient.dni;
-        appt.dentistId = dentistId;
-        appt.dentistName = dentist.name;
-        appt.reason = reason;
-        appt.depositPaid = true; // Preserves status and credit
-        appt.depositAmount = 50.00;
+        const updated = {
+            patientId,
+            patientName: `${patient.firstname} ${patient.lastname}`,
+            patientDni: patient.dni,
+            dentistId,
+            dentistName: dentist.name,
+            date,
+            time,
+            reason,
+            depositPaid: !!depositPaid,
+            depositAmount: parseFloat(depositAmount) || 0
+        };
+
+        await updateAppointment(id, updated);
         
-        // Date / Time updates
-        appt.date = date;
-        appt.time = time;
+        // Update in-memory state
+        Object.assign(state.appointments[idx], updated);
+        return state.appointments[idx];
     } else {
         // NEW APPOINTMENT
         // Check for double booking conflicts
@@ -57,7 +73,7 @@ export function saveAppointment(apptData, state, systemTime) {
         }
 
         const newAppt = {
-            id: 'app-' + Date.now(),
+            id: crypto.randomUUID(),
             patientId,
             patientName: `${patient.firstname} ${patient.lastname}`,
             patientDni: patient.dni,
@@ -66,23 +82,29 @@ export function saveAppointment(apptData, state, systemTime) {
             date,
             time,
             reason,
-            depositPaid: true,
-            depositAmount: 50.00,
+            depositPaid: !!depositPaid,
+            depositAmount: parseFloat(depositAmount) || 0,
             reminderSent: false
         };
 
-        state.appointments.push(newAppt);
+        const inserted = await insertAppointment(newAppt);
+        state.appointments.push(inserted);
+        return inserted;
     }
 }
 
-export function cancelAppointment(apptId, state, systemTime) {
-    const appt = state.appointments.find(a => a.id === apptId);
-    if (!appt) throw new Error("Cita no encontrada.");
+export async function cancelAppointment(id, state, currentDateTime) {
+    const idx = state.appointments.findIndex(a => a.id === id);
+    if (idx === -1) throw new Error("Cita no encontrada.");
 
-    // Check 4-hour limit
-    if (isWithinFourHours(appt.date, appt.time, systemTime)) {
-        throw new Error(`ERROR OPERATIVO: No se puede cancelar la cita porque faltan menos de 4 horas para el bloque programado (${appt.time}).`);
+    const appt = state.appointments[idx];
+
+    // Enforce 4h clinical limit for cancellations
+    if (isWithinFourHours(appt.date, appt.time, currentDateTime)) {
+        throw new Error("LÍMITE CLÍNICO: No se pueden cancelar citas a menos de 4 horas de su inicio.");
     }
 
-    state.appointments = state.appointments.filter(a => a.id !== apptId);
+    await deleteAppointment(id);
+    state.appointments.splice(idx, 1);
+    return true;
 }

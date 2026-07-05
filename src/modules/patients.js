@@ -1,79 +1,87 @@
-/* patients.js - Patient Admissions & Medical Records Versioning */
+/* patients.js - Patients Business Module with Async validations */
 
-export function calculateAge(dobStr, systemTime) {
-    const dob = new Date(dobStr);
-    const diff = systemTime - dob;
-    return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+import { insertPatient, updatePatient } from '../utils/storage.js';
+
+export function calculateAge(dobString) {
+    const today = new Date();
+    const birthDate = new Date(dobString);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age;
 }
 
-export function addPatient(patientData, state) {
-    const { id, firstname, lastname, dni, dob, phone, email, address, allergies, chronic } = patientData;
+export async function addPatient(patientData, state) {
+    const { firstname, lastname, dni, dob, phone, email, address, allergies, chronic } = patientData;
 
-    // Validate DNI Format (must be exactly 8 digits)
+    if (!firstname || !lastname || !dni || !dob || !phone || !email || !address) {
+        throw new Error("Todos los campos obligatorios del paciente deben ser completados.");
+    }
+
     if (!/^[0-9]{8}$/.test(dni)) {
         throw new Error("El DNI debe contener exactamente 8 dígitos numéricos.");
     }
 
     // DNI duplicate checker
-    const duplicate = state.patients.find(p => p.dni === dni && p.id !== id);
+    const duplicate = state.patients.find(p => p.dni === dni);
     if (duplicate) {
         throw new Error("Este DNI ya está registrado.");
     }
 
-    if (!id) {
-        // Generate automatic incremental Clinical History Number
-        const maxHistory = state.patients.reduce((max, p) => p.historyNumber > max ? p.historyNumber : max, 10000);
-        const newPatient = {
-            id: 'pat-' + Date.now(),
-            historyNumber: maxHistory + 1,
-            firstname,
-            lastname,
-            dni,
-            dob,
-            phone,
-            email,
-            address,
-            allergies: allergies || 'Ninguna',
-            chronic: chronic || 'Ninguna',
-            evolutionNotes: [],
-            odontogram: {
-                baselineFrozen: false,
-                baseline: {},
-                evolution: {}
-            }
-        };
-        state.patients.push(newPatient);
-        return newPatient;
-    } else {
-        // Edit existing patient details
-        const patient = state.patients.find(p => p.id === id);
-        if (!patient) throw new Error("Paciente no encontrado.");
+    // Generate automatic incremental Clinical History Number
+    const maxHistory = state.patients.reduce((max, p) => p.historyNumber > max ? p.historyNumber : max, 10000);
+    const newPatient = {
+        id: crypto.randomUUID(),
+        historyNumber: maxHistory + 1,
+        firstname,
+        lastname,
+        dni,
+        dob,
+        phone,
+        email,
+        address,
+        allergies: allergies || 'Ninguna',
+        chronic: chronic || 'Ninguna',
+        evolutionNotes: [],
+        odontogram: {
+            baselineFrozen: false,
+            baseline: {},
+            evolution: {}
+        }
+    };
 
-        patient.firstname = firstname;
-        patient.lastname = lastname;
-        patient.dni = dni;
-        patient.dob = dob;
-        patient.phone = phone;
-        patient.email = email;
-        patient.address = address;
-        patient.allergies = allergies || 'Ninguna';
-        patient.chronic = chronic || 'Ninguna';
-        return patient;
-    }
+    const inserted = await insertPatient(newPatient);
+    state.patients.push(inserted);
+    return inserted;
 }
 
-export function addEvolutionNote(patientId, noteText, author, systemTimeStr, state) {
-    const patient = state.patients.find(p => p.id === patientId);
-    if (!patient) throw new Error("Paciente no encontrado.");
+export async function addEvolutionNote(patientId, noteText, author, timestamp, state) {
+    if (!noteText.trim()) {
+        throw new Error("La nota de evolución no puede estar vacía.");
+    }
 
-    const newVersionNum = patient.evolutionNotes.length + 1;
+    const patient = state.patients.find(p => p.id === patientId);
+    if (!patient) {
+        throw new Error("Paciente no encontrado.");
+    }
+
+    if (!patient.evolutionNotes) {
+        patient.evolutionNotes = [];
+    }
+
+    const nextVersion = patient.evolutionNotes.length + 1;
     const newNote = {
-        version: newVersionNum,
-        timestamp: systemTimeStr,
-        author: author,
+        version: nextVersion,
+        timestamp,
+        author,
         content: noteText
     };
 
     patient.evolutionNotes.push(newNote);
+    
+    // Persist patient update asynchronously
+    await updatePatient(patientId, { evolutionNotes: patient.evolutionNotes });
     return newNote;
 }
