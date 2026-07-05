@@ -1,0 +1,10 @@
+{
+  "name": "portaldent-digital",
+  "version": "1.0.0",
+  "description": "Dental Clinic Operations and Clinical Management Platform",
+  "main": "index.html",
+  "scripts": {
+    "dev": "powershell -ExecutionPolicy Bypass -File ./server.ps1"
+  },
+  "dependencies": {}
+}
