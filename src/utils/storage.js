@@ -1,6 +1,6 @@
 /* storage.js - Asynchronous Storage Client Layer with Supabase support and LocalStorage fallback */
 
-import { supabase, isPlaceholder } from './supabaseClient.js';
+import { supabase, isPlaceholder, SUPABASE_URL, SUPABASE_ANON_KEY } from './supabaseClient.js';
 
 // Local database retrieval for LocalStorage fallback mode
 function getLocalDB() {
