@@ -243,9 +243,15 @@ export async function insertUser(user) {
         saveLocalDB(db);
         return user;
     }
+    const profileData = {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        role: user.role
+    };
     const { data, error } = await supabase
         .from('profiles')
-        .insert([user])
+        .insert([profileData])
         .select()
         .single();
     if (error) throw error;
@@ -263,9 +269,14 @@ export async function updateUser(id, userData) {
         }
         throw new Error("Usuario no encontrado.");
     }
+    const profileData = {
+        name: userData.name,
+        username: userData.username,
+        role: userData.role
+    };
     const { data, error } = await supabase
         .from('profiles')
-        .update(userData)
+        .update(profileData)
         .eq('id', id)
         .select()
         .single();
