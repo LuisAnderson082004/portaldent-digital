@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>PortalDent Digital - ESM Unit Test Suite</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f1f5f9; color: #1e293b; margin: 40px; }
+        .test-card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 800px; margin: 0 auto; }
+        h1 { color: #0284c7; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .test-case { padding: 12px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+        .test-case:last-child { border-bottom: none; }
+        .passed { color: #10b981; font-weight: bold; }
+        .failed { color: #ef4444; font-weight: bold; }
+        .test-desc { font-weight: 500; }
+        .test-result { font-family: monospace; }
+        .summary-badge { padding: 6px 12px; border-radius: 9999px; font-weight: bold; display: inline-block; margin-top: 15px; }
+        .summary-badge.all-passed { background-color: #d1fae5; color: #065f46; }
+        .summary-badge.some-failed { background-color: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <div class="test-card">
+        <h1>Pruebas de Validación Modular (ESM)</h1>
+        <p>Verificación directa importando los archivos JS nativos.</p>
+        
+        <div id="test-results">
+            <!-- Populated dynamically -->
+        </div>
+
+        <div id="test-summary">
+            <!-- Summary stats -->
+        </div>
+    </div>
+
+    <!-- Load ESM modules for programmatic validation -->
+    <script type="module">
+        import { isWithinFourHours } from './src/modules/appointments.js';
+        import { addPatient } from './src/modules/patients.js';
+        import { applyTreatment } from './src/modules/odontogram.js';
+        import { hashPassword } from './src/auth/authEngine.js';
+
+        // Setup mock databases to run assertions
+        const mockState = {
+            systemTime: new Date("2026-07-03T15:46:33-05:00"),
+            users: [
+                { id: 'usr-dentist', name: 'Dr. Alejandro Ruiz', role: 'dentist' }
+            ],
+            patients: [
+                {
+                    id: 'pat-1',
+                    firstname: 'Juan',
+                    lastname: 'Pérez',
+                    dni: '12345678',
+                    dob: '1985-05-12',
+                    phone: '987654321',
+                    email: 'juan@email.com',
+                    address: 'Calle Falsa 123',
+                    allergies: 'Ninguna',
+                    chronic: 'Ninguna',
+                    evolutionNotes: [],
+                    odontogram: {
+                        baselineFrozen: false,
+                        baseline: { "16": "absent" },
+                        evolution: {}
+                    }
+                }
+            ],
+            appointments: []
+        };
+
+        const resultsDiv = document.getElementById('test-results');
+        let passedCount = 0;
+        let totalCount = 0;
+
+        function assert(desc, value, expected) {
+            totalCount++;
+            const isPassed = value === expected;
+            if (isPassed) passedCount++;
+
+            const row = document.createElement('div');
+            row.className = 'test-case';
+            row.innerHTML = `
+                <span class="test-desc">${totalCount}. ${desc}</span>
+                <span class="test-result ${isPassed ? 'passed' : 'failed'}">
+                    ${isPassed ? '✓ PASÓ' : '✗ FALLÓ (Esperaba ' + expected + ', obtuvo ' + value + ')'}
+                </span>
+            `;
+            resultsDiv.appendChild(row);
+        }
+
+        async function runTests() {
+            try {
+                // Test 1: hashPassword
+                const hash = await hashPassword('admin123');
+                assert("SHA-256 Hashing generates standard 64-char string", hash.length, 64);
+                assert("SHA-256 Hashing matches exact pre-calculated hash", hash, "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9");
+
+                // Test 2: addPatient duplicate check
+                let duplicateFailed = false;
+                try {
+                    addPatient({
+                        firstname: 'Juan Duplicate',
+                        lastname: 'Pérez',
+                        dni: '12345678', // duplicate
+                        dob: '1990-01-01',
+                        phone: '999999999',
+                        email: 'dup@email.com',
+                        address: 'Direccion'
+                    }, mockState);
+                } catch (err) {
+                    if (err.message === "Este DNI ya está registrado.") {
+                        duplicateFailed = true;
+                    }
+                }
+                assert("addPatient arroja error al registrar DNI duplicado", duplicateFailed, true);
+
+                // Test 3: isWithinFourHours limit checks
+                // Current simulated time: 2026-07-03 15:46:33.
+                // 18:00 (6:00 PM) is 2h 14m away.
+                assert("isWithinFourHours detecta bloqueos de cambios a menos de 4h", isWithinFourHours('2026-07-03', '18:00', mockState.systemTime), true);
+                
+                // Tomorrow at 10:00 AM is >18 hours away.
+                assert("isWithinFourHours permite cambios a más de 4h (ej. mañana)", isWithinFourHours('2026-07-04', '10:00', mockState.systemTime), false);
+
+                // Test 4: applyTreatment validation rules
+                let treatmentBlocked = false;
+                try {
+                    // Try to apply curation on piece 16 (marked 'absent' in baseline)
+                    applyTreatment({
+                        patientId: 'pat-1',
+                        toothId: '16',
+                        surfaceName: 'occlusal',
+                        type: 'curation',
+                        note: 'Curación en molar ausente'
+                    }, mockState, 'Dr. Alejandro Ruiz', mockState.systemTime.toISOString());
+                } catch (err) {
+                    if (err.message.includes("La pieza dental 16 se encuentra marcada como AUSENTE")) {
+                        treatmentBlocked = true;
+                    }
+                }
+                assert("applyTreatment bloquea tratamientos en dientes ausentes", treatmentBlocked, true);
+
+                // Test 5: contradictory states on same surface
+                let conflictBlocked = false;
+                // Add curation first
+                mockState.patients[0].odontogram.evolution["14"] = {
+                    surfaces: { "occlusal": "curation" },
+                    notes: { "occlusal": "Curación previa" }
+                };
+
+                try {
+                    // Try to apply active pathology to the same surface
+                    applyTreatment({
+                        patientId: 'pat-1',
+                        toothId: '14',
+                        surfaceName: 'occlusal',
+                        type: 'pathology',
+                        note: 'Registrar caries sobre curación'
+                    }, mockState, 'Dr. Alejandro Ruiz', mockState.systemTime.toISOString());
+                } catch (err) {
+                    if (err.message.includes("CONTRADICCIÓN CLÍNICA")) {
+                        conflictBlocked = true;
+                    }
+                }
+                assert("applyTreatment bloquea estados contradictorios (caries sobre curación)", conflictBlocked, true);
+
+            } catch (globalErr) {
+                console.error(globalErr);
+                const errRow = document.createElement('div');
+                errRow.className = 'test-case failed';
+                errRow.innerText = "Error general durante ejecución de pruebas: " + globalErr.message;
+                resultsDiv.appendChild(errRow);
+            }
+
+            // Print summary
+            const summaryDiv = document.getElementById('test-summary');
+            if (passedCount === totalCount) {
+                summaryDiv.innerHTML = `
+                    <div class="summary-badge all-passed">
+                        ✓ Todas las pruebas pasaron (${passedCount}/${totalCount})
+                    </div>
+                `;
+            } else {
+                summaryDiv.innerHTML = `
+                    <div class="summary-badge some-failed">
+                        ✗ Fallaron algunas pruebas (${passedCount}/${totalCount})
+                    </div>
+                `;
+            }
+        }
+
+        // Run
+        runTests();
+    </script>
+</body>
+</html>

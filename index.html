@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PortalDent Digital - Gestión Clínica y Odontológica</title>
+    <!-- Google Fonts: Plus Jakarta Sans for a clean, professional clinical look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/dashboard.css">
+    <link rel="stylesheet" href="assets/css/odontogram.css">
+</head>
+<body>
+
+    <!-- 1. LOGIN SCREEN -->
+    <div id="login-screen" class="screen active">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <div class="logo-icon"><i class="fa-solid fa-tooth"></i></div>
+                    <h1>PortalDent <span>Digital</span></h1>
+                    <p>Acceso al Sistema Clínico y Operativo</p>
+                </div>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-username"><i class="fa-solid fa-user"></i> Usuario</label>
+                        <input type="text" id="login-username" placeholder="Ingresa tu usuario" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password"><i class="fa-solid fa-lock"></i> Contraseña</label>
+                        <input type="password" id="login-password" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block" id="btn-login-submit">
+                        <span class="btn-text">Iniciar Sesión</span>
+                        <span class="spinner hidden"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
+                    </button>
+                    <div class="error-msg hidden" id="login-error">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Credenciales incorrectas o acceso no autorizado.
+                    </div>
+                </form>
+                <div class="login-footer">
+                    <p>Soporte de Sistemas: <strong>anex. 4001</strong></p>
+                    <div class="preseed-hint">
+                        <strong>Cuentas de Prueba:</strong><br>
+                        Admin: <code>admin</code> / <code>admin123</code><br>
+                        Asistente: <code>receptionist</code> / <code>receptionist123</code><br>
+                        Dentista: <code>dentist</code> / <code>dentist123</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MAIN WORKSPACE -->
+    <div id="main-workspace" class="screen">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <i class="fa-solid fa-tooth"></i>
+                <div class="brand-text">
+                    <h2>PortalDent</h2>
+                    <span>Sistema Operativo</span>
+                </div>
+            </div>
+            
+            <div class="user-profile-badge">
+                <div class="avatar"><i class="fa-solid fa-user-doctor"></i></div>
+                <div class="user-info">
+                    <span id="user-display-name">Cargando...</span>
+                    <span id="user-display-role" class="badge">Rol</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-menu">
+                <ul>
+                    <!-- Shared / Dynamic Items based on role -->
+                    <li class="menu-header">Operaciones</li>
+                    <li id="menu-patients" class="nav-item active"><a href="#" onclick="switchView('patients')"><i class="fa-solid fa-hospital-user"></i> Pacientes</a></li>
+                    <li id="menu-calendar" class="nav-item"><a href="#" onclick="switchView('calendar')"><i class="fa-solid fa-calendar-days"></i> Agenda Dental</a></li>
+                    <li id="menu-reminders" class="nav-item"><a href="#" onclick="switchView('reminders')"><i class="fa-solid fa-bell"></i> Recordatorios</a></li>
+                    
+                    <li class="menu-header clinical-only">Clínica</li>
+                    <li id="menu-odontogram" class="nav-item clinical-only"><a href="#" onclick="switchView('odontogram')"><i class="fa-solid fa-teeth"></i> Odontograma & EHR</a></li>
+                    
+                    <li class="menu-header admin-only">Administración</li>
+                    <li id="menu-users" class="nav-item admin-only"><a href="#" onclick="switchView('users')"><i class="fa-solid fa-users-gear"></i> Gestión Personal</a></li>
+                    <li id="menu-shifts" class="nav-item admin-only"><a href="#" onclick="switchView('shifts')"><i class="fa-solid fa-clock-rotate-left"></i> Horarios Dentistas</a></li>
+                    <li id="menu-audit" class="nav-item admin-only"><a href="#" onclick="switchView('audit')"><i class="fa-solid fa-shield-halved"></i> Registro de Auditoría</a></li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button class="btn btn-outline btn-logout" onclick="logout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Cerrar Sesión</button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="content-area">
+            <header class="content-header">
+                <div class="header-title">
+                    <h1 id="view-title">Gestión de Pacientes</h1>
+                    <p id="view-subtitle">Registro y búsqueda de historias clínicas.</p>
+                </div>
+                <div class="header-meta">
+                    <span class="system-time"><i class="fa-regular fa-clock"></i> <span id="clock-display">00:00:00</span></span>
+                    <span class="system-date"><i class="fa-regular fa-calendar"></i> <span id="date-display">01/01/2026</span></span>
+                </div>
+            </header>
+
+            <!-- 2.1 PATIENTS VIEW -->
+            <section id="view-patients" class="content-section active">
+                <div class="action-bar">
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="patient-search-input" placeholder="Buscar por DNI, Apellido o Nro Historia..." oninput="filterPatients()">
+                    </div>
+                    <button class="btn btn-primary" id="btn-open-patient-modal" onclick="openPatientModal()"><i class="fa-solid fa-user-plus"></i> Nuevo Paciente</button>
+                </div>
+
+                <div class="card card-table">
+                    <div class="table-responsive">
+                        <table class="table" id="patients-table">
+                            <thead>
+                                <tr>
+                                    <th>N° Historia</th>
+                                    <th>DNI</th>
+                                    <th>Nombre Completo</th>
+                                    <th>Fecha de Nacimiento</th>
+                                    <th>Celular</th>
+                                    <th>Email</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="patients-table-body">
+                                <!-- Data populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2.2 CALENDAR VIEW -->
+            <section id="view-calendar" class="content-section">
+                <div class="calendar-controls">
+                    <div class="calendar-nav">
+                        <button class="btn btn-icon" onclick="changeCalendarDay(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                        <input type="date" id="calendar-date-selector" onchange="loadCalendar()">
+                        <button class="btn btn-icon" onclick="changeCalendarDay(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                    <div class="dentist-filter">
+                        <label for="calendar-dentist-filter"><i class="fa-solid fa-user-doctor"></i> Dentista:</label>
+                        <select id="calendar-dentist-filter" onchange="loadCalendar()">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="calendar-legend">
+                        <span class="legend-item"><span class="color-box free"></span> Libre</span>
+                        <span class="legend-item"><span class="color-box booked"></span> Reservado</span>
+                    </div>
+                </div>
+
+                <div class="calendar-grid-container card">
+                    <div class="calendar-header-row">
+                        <div class="time-col-header">Hora</div>
+                        <div class="slot-col-header" id="calendar-grid-header-day">Viernes, 3 de Julio de 2026</div>
+                    </div>
+                    <div class="calendar-grid-rows" id="calendar-grid-rows">
+                        <!-- Populated dynamically (9:00 AM to 7:00 PM) -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2.3 REMINDERS VIEW -->
+            <section id="view-reminders" class="content-section">
+                <div class="alert alert-info">
+                    <i class="fa-solid fa-circle-info"></i> Gestión y registro de recordatorios de citas activas del día de hoy.
+                </div>
+                <div class="card card-table">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Paciente</th>
+                                    <th>DNI</th>
+                                    <th>Hora</th>
+                                    <th>Odontólogo</th>
+                                    <th>Abono (S/ 50.00)</th>
+                                    <th>Estado de Recordatorio</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reminders-table-body">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2.4 ODONTOGRAM & EHR VIEW -->
+            <section id="view-odontogram" class="content-section">
+                <div class="ehr-container">
+                    <!-- Left column: Patient Info, Alerts & Evolution Notes -->
+                    <div class="ehr-sidebar">
+                        <div class="card patient-selector-card">
+                            <label for="ehr-patient-select"><strong>Seleccionar Paciente para Consulta:</strong></label>
+                            <select id="ehr-patient-select" class="form-control" onchange="loadEHRForPatient()">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+
+                        <!-- MEDICAL ALERTS BANNER -->
+                        <div class="card alert-card hidden" id="medical-alerts-card">
+                            <div class="alert-card-header">
+                                <i class="fa-solid fa-triangle-exclamation"></i> ALERTA MÉDICA IMPORTANTE
+                            </div>
+                            <div class="alert-card-body" id="medical-alerts-content">
+                                <!-- Allergy/warning information -->
+                            </div>
+                        </div>
+
+                        <!-- PATIENT INFO CARD -->
+                        <div class="card patient-details-card">
+                            <h3>Ficha Clínica</h3>
+                            <div class="detail-grid">
+                                <div><strong>N° Historia:</strong> <span id="ehr-history-number">-</span></div>
+                                <div><strong>DNI:</strong> <span id="ehr-dni">-</span></div>
+                                <div><strong>Edad:</strong> <span id="ehr-age">-</span></div>
+                                <div><strong>Contacto:</strong> <span id="ehr-phone">-</span></div>
+                            </div>
+                            <div class="detail-full">
+                                <strong>Antecedentes Médicos Generales:</strong>
+                                <p id="ehr-general-background" class="text-muted">Ninguno especificado.</p>
+                            </div>
+                        </div>
+
+                        <!-- CLINICAL HISTORY & EVOLUTION NOTES -->
+                        <div class="card evolution-notes-card">
+                            <div class="card-header-flex">
+                                <h3>Notas de Evolución Clínica</h3>
+                                <span class="badge badge-info"><span id="ehr-notes-count">0</span> Versiones</span>
+                            </div>
+                            
+                            <!-- Form to Add Note -->
+                            <form id="add-evolution-note-form" class="mt-3">
+                                <div class="form-group">
+                                    <label for="new-note-text">Nueva Nota de Evolución (Inalterable):</label>
+                                    <textarea id="new-note-text" rows="3" placeholder="Escriba los hallazgos clínicos, diagnóstico o procedimientos realizados en esta sesión..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk"></i> Guardar Nota</button>
+                            </form>
+
+                            <!-- Timeline List of Notes -->
+                            <div class="notes-timeline" id="notes-timeline">
+                                <!-- Filled by JS in reverse chronological order -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right column: Interactive Odontogram Chart -->
+                    <div class="ehr-main">
+                        <div class="card odontogram-container-card">
+                            <div class="odontogram-header">
+                                <h3>Odontograma Gráfico Interactivo</h3>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline active" id="btn-odontogram-mode-baseline" onclick="setOdontogramMode('baseline')">Baseline (Inicial)</button>
+                                    <button class="btn btn-sm btn-outline" id="btn-odontogram-mode-evolution" onclick="setOdontogramMode('evolution')">Tratamiento & Evolución</button>
+                                </div>
+                            </div>
+
+                            <div class="odontogram-help alert alert-info py-2 my-2">
+                                <span id="odontogram-help-text">Modo Baseline: Configure el estado de ingreso del paciente. Al guardar, este registro se congelará de forma legal.</span>
+                            </div>
+
+                            <!-- Interactive Dental Canvas -->
+                            <div class="odontogram-canvas">
+                                <!-- ADULT ARCH ROW (Upper: 1-16) -->
+                                <div class="teeth-row-group">
+                                    <span class="row-label">Arcada Superior Adulto (1 - 16)</span>
+                                    <div class="teeth-row" id="odontogram-adult-upper">
+                                        <!-- Rendered dynamically -->
+                                    </div>
+                                </div>
+
+                                <!-- CHILD ARCH ROW (Upper: 51-55, 61-65 FDI / A-J) -->
+                                <div class="teeth-row-group child-row">
+                                    <span class="row-label">Arcada Superior Infantil (A - J)</span>
+                                    <div class="teeth-row" id="odontogram-child-upper">
+                                        <!-- Rendered dynamically -->
+                                    </div>
+                                </div>
+
+                                <!-- CHILD ARCH ROW (Lower: K - T) -->
+                                <div class="teeth-row-group child-row">
+                                    <span class="row-label">Arcada Inferior Infantil (K - T)</span>
+                                    <div class="teeth-row" id="odontogram-child-lower">
+                                        <!-- Rendered dynamically -->
+                                    </div>
+                                </div>
+
+                                <!-- ADULT ARCH ROW (Lower: 17-32) -->
+                                <div class="teeth-row-group">
+                                    <span class="row-label">Arcada Inferior Adulto (17 - 32)</span>
+                                    <div class="teeth-row" id="odontogram-adult-lower">
+                                        <!-- Rendered dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Bar / Saving baseline / Adding treatment -->
+                            <div class="odontogram-footer mt-4">
+                                <div id="baseline-actions">
+                                    <button class="btn btn-warning" id="btn-save-baseline" onclick="saveBaselineState()"><i class="fa-solid fa-lock"></i> Congelar & Guardar Estado Inicial</button>
+                                    <span id="baseline-saved-indicator" class="text-success hidden"><i class="fa-solid fa-circle-check"></i> Estado Inicial Legal Congelado</span>
+                                </div>
+                                <div id="evolution-actions" class="hidden">
+                                    <div class="treatment-selection-panel">
+                                        <h4>Registrar Procedimiento Evolutivo</h4>
+                                        <div class="selection-row">
+                                            <div class="form-group select-inline">
+                                                <label for="treatment-tooth-select">Pieza/Superficie Seleccionada:</label>
+                                                <input type="text" id="treatment-tooth-select" readonly placeholder="Haga clic en un diente/superficie" class="form-control">
+                                            </div>
+                                            <div class="form-group select-inline">
+                                                <label for="treatment-type-select">Tratamiento:</label>
+                                                <select id="treatment-type-select" class="form-control">
+                                                    <option value="curation">Curación (Obturación)</option>
+                                                    <option value="sealant">Sellante</option>
+                                                    <option value="extraction">Extracción (Pieza Ausente)</option>
+                                                    <option value="pathology">Caries / Patología Activa</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="form-group mt-2">
+                                            <label for="treatment-note-input">Nota del Procedimiento (Requerido):</label>
+                                            <input type="text" id="treatment-note-input" placeholder="Ej. Restauración resina compuesta superficie oclusal" class="form-control" required>
+                                        </div>
+                                        <button class="btn btn-success mt-2" onclick="applyTreatmentToTooth()"><i class="fa-solid fa-plus"></i> Aplicar Tratamiento</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- EXPORT ENGINE CARD -->
+                        <div class="card export-card mt-3">
+                            <div class="card-header-flex">
+                                <h3>Exportación de Registro Clínico</h3>
+                                <button id="btn-export-pdf" class="btn btn-secondary" onclick="exportPatientPDF()" disabled>
+                                    <i class="fa-solid fa-file-pdf"></i> Exportar Resumen Clínico (PDF)
+                                </button>
+                            </div>
+                            <p class="text-muted text-sm mt-1" id="export-help-text">La exportación en PDF se activará automáticamente cuando el paciente cuente con al menos una nota de evolución clínica guardada.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2.5 USER MANAGEMENT VIEW -->
+            <section id="view-users" class="content-section">
+                <div class="action-bar">
+                    <h3>Personal de la Clínica</h3>
+                    <button class="btn btn-primary" onclick="openUserModal()"><i class="fa-solid fa-user-plus"></i> Agregar Personal</button>
+                </div>
+                <div class="card card-table">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Usuario</th>
+                                    <th>Rol</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2.6 SHIFTS VIEW -->
+            <section id="view-shifts" class="content-section">
+                <div class="action-bar">
+                    <h3>Horarios y Turnos Operativos de Odontólogos</h3>
+                    <button class="btn btn-primary" onclick="openShiftModal()"><i class="fa-solid fa-calendar-plus"></i> Configurar Turno</button>
+                </div>
+                <div class="card card-table">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Odontólogo</th>
+                                    <th>Día de la Semana</th>
+                                    <th>Hora Entrada</th>
+                                    <th>Hora Salida</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="shifts-table-body">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2.7 SECURITY AUDIT LOGS VIEW -->
+            <section id="view-audit" class="content-section">
+                <div class="alert alert-warning">
+                    <i class="fa-solid fa-shield-halved"></i> <strong>Registro de Seguridad Inalterable:</strong> Se auditan todos los accesos a datos clínicos de pacientes sensibles de acuerdo con regulaciones de privacidad médica.
+                </div>
+                <div class="card card-table">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID Registro</th>
+                                    <th>Usuario del Sistema</th>
+                                    <th>Rol</th>
+                                    <th>Paciente Consultado</th>
+                                    <th>ID Hist. Paciente</th>
+                                    <th>Fecha y Hora del Suceso</th>
+                                </tr>
+                            </thead>
+                            <tbody id="audit-table-body">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ==================== MODALS & DIALOGS ==================== -->
+
+    <!-- Patient Intake Modal -->
+    <div id="patient-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="patient-modal-title">Ficha de Admisión de Paciente</h3>
+                <span class="close-btn" onclick="closePatientModal()">&times;</span>
+            </div>
+            <form id="patient-form">
+                <input type="hidden" id="patient-id-field">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="patient-firstname">Nombres *</label>
+                            <input type="text" id="patient-firstname" required placeholder="Nombres del paciente">
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="patient-lastname">Apellidos *</label>
+                            <input type="text" id="patient-lastname" required placeholder="Apellidos del paciente">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="patient-dni">Documento Nacional de Identidad (DNI) *</label>
+                            <input type="text" id="patient-dni" required pattern="^[0-9]{8}$" title="El DNI debe contener exactamente 8 números" placeholder="Ej. 74839201">
+                            <div class="error-feedback hidden" id="patient-dni-error">Este DNI ya está registrado.</div>
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="patient-dob">Fecha de Nacimiento *</label>
+                            <input type="date" id="patient-dob" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="patient-phone">Teléfono Celular *</label>
+                            <input type="tel" id="patient-phone" required placeholder="Ej. 987654321">
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="patient-email">Correo Electrónico *</label>
+                            <input type="email" id="patient-email" required placeholder="nombre@correo.com">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="patient-address">Dirección de Domicilio *</label>
+                        <input type="text" id="patient-address" required placeholder="Dirección completa, distrito">
+                    </div>
+                    <hr>
+                    <h4>Ficha Médica Inicial (Solo Lectura para Asistentes)</h4>
+                    <div class="form-group">
+                        <label for="patient-allergies">Alergias Conocidas (Medicamentos/Materiales) <span class="badge badge-warning">ALERTA</span></label>
+                        <input type="text" id="patient-allergies" placeholder="Ej. Alérgico a la Penicilina y al Látex. Dejar vacío si no aplica.">
+                    </div>
+                    <div class="form-group">
+                        <label for="patient-chronic">Enfermedades Crónicas / Comorbilidades</label>
+                        <input type="text" id="patient-chronic" placeholder="Ej. Hipertensión arterial controlada, Diabetes tipo II">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closePatientModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Registrar y Generar N° Historia</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Appointment Booking Modal -->
+    <div id="appointment-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Agendar Cita Dental</h3>
+                <span class="close-btn" onclick="closeAppointmentModal()">&times;</span>
+            </div>
+            <form id="appointment-form">
+                <!-- Lock slot info -->
+                <input type="hidden" id="appointment-date">
+                <input type="hidden" id="appointment-time">
+                <input type="hidden" id="appointment-id-field">
+
+                <div class="modal-body">
+                    <div class="form-group-info" id="appointment-slot-info">
+                        <strong>Fecha:</strong> 2026-07-03 | <strong>Horario:</strong> 09:00 AM - 10:00 AM
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="appointment-patient">Seleccionar Paciente *</label>
+                        <div class="custom-select-wrapper">
+                            <input type="text" id="appointment-patient-search" placeholder="Escriba DNI o Nombre para buscar..." class="form-control" oninput="searchPatientForAppointment()">
+                            <select id="appointment-patient" class="form-control" size="4" required>
+                                <!-- Populated dynamically by search -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="appointment-dentist">Odontólogo Tratante *</label>
+                            <select id="appointment-dentist" class="form-control" required>
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="appointment-reason">Motivo de Consulta *</label>
+                            <input type="text" id="appointment-reason" required placeholder="Ej. Curación molar, Limpieza, Evaluación">
+                        </div>
+                    </div>
+
+                    <div class="deposit-verification-box alert alert-warning mt-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <strong>Abono de Separación Requerido</strong>
+                                <p class="text-sm m-0">Para confirmar esta reserva, se debe validar el abono del depósito.</p>
+                            </div>
+                            <div class="deposit-toggle-container">
+                                <label class="switch">
+                                    <input type="checkbox" id="appointment-deposit" onchange="toggleDepositValidation()">
+                                    <span class="slider round"></span>
+                                </label>
+                                <span class="deposit-label" id="deposit-status-label">Separación Pagada (S/ 50.00)</span>
+                            </div>
+                        </div>
+                        <div class="error-feedback hidden text-danger mt-2" id="deposit-error-msg">
+                            <i class="fa-solid fa-circle-xmark"></i> Debe activar la verificación de pago (S/ 50.00) para confirmar la cita.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" id="btn-cancel-appointment" onclick="cancelAppointmentFlow()" style="margin-right: auto; display: none;" class="btn-danger-outline">Eliminar Cita</button>
+                    <button type="button" class="btn btn-outline" onclick="closeAppointmentModal()">Cerrar</button>
+                    <button type="submit" class="btn btn-primary" id="btn-save-appointment">Confirmar Cita</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Communication Template Modal (Reminder) -->
+    <div id="reminder-modal" class="modal">
+        <div class="modal-content modal-md">
+            <div class="modal-header">
+                <h3>Plantilla de Recordatorio de Cita</h3>
+                <span class="close-btn" onclick="closeReminderModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">A continuación se presenta el formato pre-establecido del mensaje de comunicación clínica a ser transmitido:</p>
+                <div class="template-preview-box">
+                    <pre id="reminder-template-text">Cargando plantilla...</pre>
+                </div>
+                <div class="alert alert-success mt-2 py-2">
+                    <i class="fa-solid fa-paper-plane"></i> Copie el contenido para transmitirlo vía Whatsapp Web o SMS.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeReminderModal()">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="copyReminderText()"><i class="fa-solid fa-copy"></i> Copiar Mensaje</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User CRUD Modal -->
+    <div id="user-modal" class="modal">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h3>Gestión de Personal</h3>
+                <span class="close-btn" onclick="closeUserModal()">&times;</span>
+            </div>
+            <form id="user-form">
+                <input type="hidden" id="user-id-field">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="user-name">Nombre Completo *</label>
+                        <input type="text" id="user-name" required placeholder="Ej. Dr. Mario Santos">
+                    </div>
+                    <div class="form-group">
+                        <label for="user-username">Nombre de Usuario *</label>
+                        <input type="text" id="user-username" required placeholder="Ej. msantos">
+                    </div>
+                    <div class="form-group">
+                        <label for="user-role">Rol de Acceso *</label>
+                        <select id="user-role" class="form-control" required>
+                            <option value="admin">Administrador</option>
+                            <option value="receptionist">Asistente / Recepcionista</option>
+                            <option value="dentist">Odontólogo / Dentista</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="user-password">Contraseña *</label>
+                        <input type="password" id="user-password" required placeholder="Ingresar contraseña">
+                        <span class="text-xs text-muted" id="user-password-hint">Ingrese una contraseña segura.</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeUserModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Registro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Shift Config Modal -->
+    <div id="shift-modal" class="modal">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h3>Asignación de Turnos de Odontólogos</h3>
+                <span class="close-btn" onclick="closeShiftModal()">&times;</span>
+            </div>
+            <form id="shift-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="shift-dentist">Odontólogo *</label>
+                        <select id="shift-dentist" class="form-control" required>
+                            <!-- Dentists only -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="shift-day">Día Laboral *</label>
+                        <select id="shift-day" class="form-control" required>
+                            <option value="Monday">Lunes</option>
+                            <option value="Tuesday">Martes</option>
+                            <option value="Wednesday">Miércoles</option>
+                            <option value="Thursday">Jueves</option>
+                            <option value="Friday">Viernes</option>
+                            <option value="Saturday">Sábado</option>
+                            <option value="Sunday">Domingo</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="shift-start">Hora Entrada *</label>
+                            <select id="shift-start" class="form-control" required>
+                                <option value="09:00">09:00 AM</option>
+                                <option value="10:00">10:00 AM</option>
+                                <option value="11:00">11:00 AM</option>
+                                <option value="12:00">12:00 PM</option>
+                                <option value="13:00">01:00 PM</option>
+                                <option value="14:00">02:00 PM</option>
+                                <option value="15:00">03:00 PM</option>
+                                <option value="16:00">04:00 PM</option>
+                                <option value="17:00">05:00 PM</option>
+                                <option value="18:00">06:00 PM</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="shift-end">Hora Salida *</label>
+                            <select id="shift-end" class="form-control" required>
+                                <option value="10:00">10:00 AM</option>
+                                <option value="11:00">11:00 AM</option>
+                                <option value="12:00">12:00 PM</option>
+                                <option value="13:00">01:00 PM</option>
+                                <option value="14:00">02:00 PM</option>
+                                <option value="15:00">03:00 PM</option>
+                                <option value="16:00">04:00 PM</option>
+                                <option value="17:00">05:00 PM</option>
+                                <option value="18:00">06:00 PM</option>
+                                <option value="19:00">07:00 PM</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeShiftModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Registrar Turno</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Simple Print/PDF Structure (Hidden until Print action takes place) -->
+    <div id="print-iframe-container" style="display: none;"></div>
+
+    <script type="module" src="./src/main.js"></script>
+</body>
+</html>
