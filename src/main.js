@@ -685,7 +685,7 @@ function loadEHRForPatient() {
     // Update search input to match selected patient
     const searchInput = document.getElementById('ehr-patient-search');
     if (searchInput) {
-        searchInput.value = `${patient.firstname} ${patient.lastname} (DNI: ${patient.dni})`;
+        searchInput.value = `${patient.firstname} ${patient.lastname}`;
         const clearBtn = document.getElementById('ehr-patient-search-clear');
         if (clearBtn) clearBtn.classList.remove('hidden');
     }
@@ -1135,7 +1135,7 @@ function setupPatientSearch() {
                 `;
                 item.addEventListener('click', () => {
                     select.value = p.id;
-                    searchInput.value = `${p.firstname} ${p.lastname} (DNI: ${p.dni})`;
+                    searchInput.value = `${p.firstname} ${p.lastname}`;
                     toggleClearBtn();
                     resultsDropdown.classList.add('hidden');
                     loadEHRForPatient();
