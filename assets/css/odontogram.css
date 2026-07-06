@@ -1,6 +1,14 @@
 /* odontogram.css - Clinical EHR Layout & Interactive Teeth Charts */
 
-/* Electronic Health Record (EHR) Page Grid */
+#view-odontogram {
+    padding-top: 0.5rem !important;
+}
+
+#view-odontogram .odontogram-help {
+    margin-top: 0.4rem !important;
+    margin-bottom: 0.4rem !important;
+}
+
 .ehr-container {
     display: grid;
     grid-template-columns: 340px 1fr;
