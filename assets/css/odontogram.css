@@ -316,8 +316,10 @@
 }
 
 #ehr-patient-search {
+    width: 100%;
+    box-sizing: border-box;
     padding: 0.85rem 1.25rem;
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     border-radius: 10px;
     border: 1.5px solid var(--border-color);
     transition: all var(--transition-fast);
