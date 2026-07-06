@@ -686,6 +686,8 @@ function loadEHRForPatient() {
     const searchInput = document.getElementById('ehr-patient-search');
     if (searchInput) {
         searchInput.value = `${patient.firstname} ${patient.lastname} (DNI: ${patient.dni})`;
+        const clearBtn = document.getElementById('ehr-patient-search-clear');
+        if (clearBtn) clearBtn.classList.remove('hidden');
     }
 
     document.getElementById('ehr-history-number').innerText = `#${patient.historyNumber}`;
@@ -725,6 +727,8 @@ function clearEHRPanel() {
     const searchInput = document.getElementById('ehr-patient-search');
     if (searchInput) {
         searchInput.value = '';
+        const clearBtn = document.getElementById('ehr-patient-search-clear');
+        if (clearBtn) clearBtn.classList.add('hidden');
     }
     
     document.getElementById('odontogram-adult-upper').innerHTML = '';
@@ -1086,12 +1090,24 @@ function setupPatientSearch() {
     const searchInput = document.getElementById('ehr-patient-search');
     const resultsDropdown = document.getElementById('ehr-patient-search-results');
     const select = document.getElementById('ehr-patient-select');
+    const clearBtn = document.getElementById('ehr-patient-search-clear');
 
     if (!searchInput || !resultsDropdown) return;
+
+    const toggleClearBtn = () => {
+        if (clearBtn) {
+            if (searchInput.value) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+        }
+    };
 
     searchInput.addEventListener('input', () => {
         const query = searchInput.value.toLowerCase().trim();
         resultsDropdown.innerHTML = '';
+        toggleClearBtn();
 
         if (!query) {
             resultsDropdown.classList.add('hidden');
@@ -1120,6 +1136,7 @@ function setupPatientSearch() {
                 item.addEventListener('click', () => {
                     select.value = p.id;
                     searchInput.value = `${p.firstname} ${p.lastname} (DNI: ${p.dni})`;
+                    toggleClearBtn();
                     resultsDropdown.classList.add('hidden');
                     loadEHRForPatient();
                 });
@@ -1129,6 +1146,17 @@ function setupPatientSearch() {
 
         resultsDropdown.classList.remove('hidden');
     });
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            select.value = '';
+            toggleClearBtn();
+            resultsDropdown.classList.add('hidden');
+            loadEHRForPatient();
+            searchInput.focus();
+        });
+    }
 
     // Handle clicks outside the dropdown to close it
     document.addEventListener('click', (e) => {
