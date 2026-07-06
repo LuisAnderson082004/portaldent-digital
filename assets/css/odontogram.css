@@ -4,7 +4,7 @@
 .ehr-container {
     display: grid;
     grid-template-columns: 340px 1fr;
-    gap: 1rem;
+    gap: 2rem;
     align-items: start;
     flex-grow: 1;
 }
@@ -12,42 +12,31 @@
 .ehr-sidebar {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-}
-
-.ehr-sidebar .card {
-    padding: 0.75rem !important;
-}
-
-.ehr-sidebar .card h3 {
-    font-size: 0.95rem;
-    margin-bottom: 0.4rem;
-    margin-top: 0;
+    gap: 1.5rem;
 }
 
 .patient-selector-card select {
     width: 100%;
-    margin-top: 0.25rem;
+    margin-top: 0.5rem;
 }
 
 .detail-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.35rem 0.5rem;
-    font-size: 0.8rem;
-    margin-top: 0.5rem;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    margin-top: 0.75rem;
 }
 
 .detail-full {
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
     border-top: 1px solid var(--border-color);
-    font-size: 0.8rem;
+    font-size: 0.85rem;
 }
 
 .detail-full p {
-    margin-top: 0.15rem;
-    margin-bottom: 0;
+    margin-top: 0.25rem;
 }
 
 /* Medical Alert Card */
@@ -55,9 +44,9 @@
     background-color: var(--danger-light);
     border: 2px solid var(--danger-color);
     border-radius: 12px;
-    padding: 0.75rem;
+    padding: 1.25rem;
     color: var(--text-dark);
-    margin-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
     box-shadow: var(--shadow-md);
     animation: pulseBorder 2s infinite alternate;
 }
@@ -65,24 +54,24 @@
 .alert-card-header {
     font-weight: 700;
     color: var(--danger-color);
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.5rem;
 }
 
 .alert-card-body {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.4;
 }
 
 /* Clinical notes timeline */
 .notes-timeline {
-    max-height: 220px;
+    max-height: 380px;
     overflow-y: auto;
-    margin-top: 0.75rem;
+    margin-top: 1.5rem;
     padding-right: 0.25rem;
 }
 
@@ -329,9 +318,9 @@
 #ehr-patient-search {
     width: 100%;
     box-sizing: border-box;
-    padding: 0.55rem 2.2rem 0.55rem 0.85rem;
-    font-size: 0.9rem;
-    border-radius: 8px;
+    padding: 0.85rem 2.2rem 0.85rem 1.25rem;
+    font-size: 0.95rem;
+    border-radius: 10px;
     border: 1.5px solid var(--border-color);
     transition: all var(--transition-fast);
 }
