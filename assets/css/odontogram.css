@@ -308,3 +308,74 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Searchable Patient Dropdown for EHR */
+.searchable-select {
+    position: relative;
+    width: 100%;
+}
+
+#ehr-patient-search {
+    padding: 0.85rem 1.25rem;
+    font-size: 1.05rem;
+    border-radius: 10px;
+    border: 1.5px solid var(--border-color);
+    transition: all var(--transition-fast);
+}
+
+#ehr-patient-search:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px var(--primary-light);
+}
+
+.search-results-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    max-height: 250px;
+    overflow-y: auto;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-md);
+    z-index: 999;
+    margin-top: 4px;
+}
+
+.search-results-dropdown.hidden {
+    display: none;
+}
+
+.search-result-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color var(--transition-fast);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover {
+    background-color: var(--primary-light);
+}
+
+.search-result-name {
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+.search-result-dni {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background-color: var(--bg-light);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
