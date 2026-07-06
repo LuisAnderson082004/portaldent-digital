@@ -6,6 +6,11 @@
     display: grid;
     grid-template-columns: 260px 1fr;
     overflow: hidden;
+    transition: grid-template-columns var(--transition-normal);
+}
+
+#main-workspace.collapsed-sidebar {
+    grid-template-columns: 0px 1fr;
 }
 
 .sidebar {
@@ -15,6 +20,17 @@
     flex-direction: column;
     padding: 1.5rem 1rem;
     height: 100%;
+    transition: transform var(--transition-normal), opacity var(--transition-normal), padding var(--transition-normal);
+    overflow: hidden;
+    min-width: 260px;
+}
+
+#main-workspace.collapsed-sidebar .sidebar {
+    transform: translateX(-260px);
+    opacity: 0;
+    pointer-events: none;
+    padding: 0;
+    border-right: none;
 }
 
 .sidebar-brand {
@@ -759,4 +775,27 @@ input:checked + .slider:before {
     .col-6 {
         width: 100%;
     }
+}
+
+/* Sidebar Toggle Button styling */
+.sidebar-toggle-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-dark);
+    padding: 0.5rem;
+    font-size: 1.1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+    width: 38px;
+    height: 38px;
+}
+
+.sidebar-toggle-btn:hover {
+    background-color: var(--bg-light);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
 }
