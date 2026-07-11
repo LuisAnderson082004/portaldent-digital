@@ -1,6 +1,6 @@
 /* authEngine.js - Authentication & RBAC Engine with Supabase integration */
 
-import { supabase, isPlaceholder } from '../utils/supabaseClient.js';
+import { supabase } from '../utils/supabaseClient.js';
 
 export async function hashPassword(password) {
     const encoder = new TextEncoder();
@@ -12,14 +12,6 @@ export async function hashPassword(password) {
 }
 
 export async function verifyUser(username, password, usersList) {
-    if (isPlaceholder) {
-        // Fallback local auth validation
-        const user = usersList.find(u => u.username.toLowerCase() === username.toLowerCase());
-        if (!user) return null;
-        const inputHash = await hashPassword(password);
-        return user.passwordHash === inputHash ? user : null;
-    }
-
     // Convert local clinic usernames to emails internally for Supabase Auth
     const email = username.includes('@') ? username : `${username.toLowerCase()}@portaldent.com`;
     
@@ -73,7 +65,5 @@ export function checkSession() {
 
 export async function logout() {
     sessionStorage.removeItem('portaldent_session');
-    if (!isPlaceholder) {
-        await supabase.auth.signOut();
-    }
+    await supabase.auth.signOut();
 }
