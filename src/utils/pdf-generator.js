@@ -292,39 +292,39 @@ export function exportPatientPDFDirect(patientId, state) {
                 </div>
             </div>
 
-            \${patient.allergies && patient.allergies.toLowerCase() !== 'ninguna' && patient.allergies.toLowerCase() !== 'ninguno' ? \`
+            ${patient.allergies && patient.allergies.toLowerCase() !== 'ninguna' && patient.allergies.toLowerCase() !== 'ninguno' ? `
                 <div class="alert-box">
-                    <span style="font-size: 16px;">⚠</span> ALERTA MÉDICA: Paciente registra sensibilidad o alergias conocidas: \${patient.allergies}
+                    <span style="font-size: 16px;">⚠</span> ALERTA MÉDICA: Paciente registra sensibilidad o alergias conocidas: ${patient.allergies}
                 </div>
-            \` : ''}
+            ` : ''}
 
             <div class="grid-info">
                 <div class="info-card">
                     <h3>Datos de Identificación</h3>
-                    <p><strong>Paciente:</strong> \${patient.firstname} \${patient.lastname}</p>
-                    <p><strong>Documento Identidad (DNI):</strong> \${patient.dni}</p>
-                    <p><strong>N° Historia Clínica:</strong> HC-\${patient.historyNumber}</p>
-                    <p><strong>Fecha Nacimiento:</strong> \${dobFormatted}</p>
+                    <p><strong>Paciente:</strong> ${patient.firstname} ${patient.lastname}</p>
+                    <p><strong>Documento Identidad (DNI):</strong> ${patient.dni}</p>
+                    <p><strong>N° Historia Clínica:</strong> HC-${patient.historyNumber}</p>
+                    <p><strong>Fecha Nacimiento:</strong> ${dobFormatted}</p>
                 </div>
                 <div class="info-card">
                     <h3>Contacto y Antecedentes</h3>
-                    <p><strong>Celular:</strong> \${patient.phone}</p>
-                    <p><strong>Correo Electrónico:</strong> \${patient.email}</p>
-                    <p><strong>Dirección:</strong> \${patient.address}</p>
-                    <p><strong>Antecedentes Médicos:</strong> \${patient.chronic || 'Ninguno especificado'}</p>
+                    <p><strong>Celular:</strong> ${patient.phone}</p>
+                    <p><strong>Correo Electrónico:</strong> ${patient.email}</p>
+                    <p><strong>Dirección:</strong> ${patient.address}</p>
+                    <p><strong>Antecedentes Médicos:</strong> ${patient.chronic || 'Ninguno especificado'}</p>
                 </div>
             </div>
 
             <div class="section-title">Evolución Clínica y Tratamientos (Odontograma)</div>
-            \${odontogramSummaryHTML}
+            ${odontogramSummaryHTML}
 
             <div class="section-title">Historial de Notas de Evolución</div>
-            \${notesHTML}
+            ${notesHTML}
 
             <div class="footer-container">
                 <div>
                     <p style="font-size: 10px; color: #64748b; margin: 0;">PortalDent Digital Software, version 2.0</p>
-                    <p style="font-size: 10px; color: #64748b; margin: 2px 0 0 0;">ID de Seguridad Documentaria: SEC-\${Date.now().toString().slice(-8)}</p>
+                    <p style="font-size: 10px; color: #64748b; margin: 2px 0 0 0;">ID de Seguridad Documentaria: SEC-${Date.now().toString().slice(-8)}</p>
                 </div>
                 
                 <div class="signature-line">
@@ -349,7 +349,7 @@ export function exportPatientPDFDirect(patientId, state) {
             </script>
         </body>
         </html>
-    \`);
+    `);
     doc.close();
 }
 
