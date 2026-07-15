@@ -1,6 +1,6 @@
 # PortalDent Digital - Clínica y Ficha Odontológica
 
-PortalDent Digital es una aplicación web SPA (Single Page Application) moderna, profesional y altamente responsiva diseñada para gestionar los procesos operativos y clínicos de un consultorio dental. Cuenta con control de acceso basado en roles (RBAC), agenda de citas con pagos de separación, registro médico inalterable, odontograma interactivo y auditoría de privacidad.
+PortalDent Digital es una aplicación web SPA (Single Page Application) moderna, profesional y altamente responsiva diseñada para gestionar los procesos operativos y clínicos de un consultorio dental. Cuenta con control de acceso basado en roles (RBAC), agenda de citas con pagos de separación, registro médico inalterable y odontograma interactivo.
 
 ---
 
@@ -37,8 +37,7 @@ Workspace Root/
     └── modules/
         ├── appointments.js     # Reglas del calendario, abonos de separación y límite de 4h
         ├── patients.js         # Admisión de pacientes, DNI único y capas de evolución inmutables
-        ├── odontogram.js       # Odontograma, congelamiento de línea base y raíces anatómicas
-        └── audit.js            # Bitácora automática de auditoría de privacidad
+        └── odontogram.js       # Odontograma, congelamiento de línea base y raíces anatómicas
 ```
 
 ---
