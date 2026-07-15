@@ -243,16 +243,10 @@ export async function deleteUser(id) {
         window.__mock_db_users__ = window.__mock_db_users__.filter(u => u.id !== id);
         return true;
     }
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${id}`, {
-        method: 'DELETE',
-        headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Content-Type': 'application/json'
-        }
-    });
-    if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.message || "Error al eliminar el usuario");
-    }
+    const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', id);
+    if (error) throw error;
     return true;
 }
