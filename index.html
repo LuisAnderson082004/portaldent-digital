@@ -82,7 +82,6 @@
                     <li class="menu-header admin-only">Administración</li>
                     <li id="menu-users" class="nav-item admin-only"><a href="#" onclick="switchView('users')"><i class="fa-solid fa-users-gear"></i> Gestión Personal</a></li>
                     <li id="menu-shifts" class="nav-item admin-only"><a href="#" onclick="switchView('shifts')"><i class="fa-solid fa-clock-rotate-left"></i> Horarios Dentistas</a></li>
-                    <li id="menu-audit" class="nav-item admin-only"><a href="#" onclick="switchView('audit')"><i class="fa-solid fa-shield-halved"></i> Registro de Auditoría</a></li>
                 </ul>
             </nav>
 
@@ -413,31 +412,6 @@
                 </div>
             </section>
 
-            <!-- 2.7 SECURITY AUDIT LOGS VIEW -->
-            <section id="view-audit" class="content-section">
-                <div class="alert alert-warning">
-                    <i class="fa-solid fa-shield-halved"></i> <strong>Registro de Seguridad Inalterable:</strong> Se auditan todos los accesos a datos clínicos de pacientes sensibles de acuerdo con regulaciones de privacidad médica.
-                </div>
-                <div class="card card-table">
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>ID Registro</th>
-                                    <th>Usuario del Sistema</th>
-                                    <th>Rol</th>
-                                    <th>Paciente Consultado</th>
-                                    <th>ID Hist. Paciente</th>
-                                    <th>Fecha y Hora del Suceso</th>
-                                </tr>
-                            </thead>
-                            <tbody id="audit-table-body">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
         </main>
     </div>
 

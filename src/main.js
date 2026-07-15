@@ -4,7 +4,6 @@ import {
     getPatients, 
     getAppointments, 
     getShifts, 
-    getAuditLogs, 
     getUsers, 
     insertShift as insertShiftInDB, 
     deleteShift as deleteShiftInDB, 
@@ -17,7 +16,6 @@ import { hashPassword, verifyUser, getRoleNameSpanish, checkSession, logout } fr
 import { isWithinFourHours, saveAppointment, cancelAppointment } from './modules/appointments.js';
 import { calculateAge, addPatient, addEvolutionNote } from './modules/patients.js';
 import { saveBaselineState, applyTreatment } from './modules/odontogram.js';
-import { writeAuditLog } from './modules/audit.js';
 import { exportPatientPDFDirect } from './utils/pdf-generator.js';
 
 // Application State
@@ -27,7 +25,6 @@ let appState = {
     patients: [],
     appointments: [],
     shifts: [],
-    auditLogs: [],
     systemTime: new Date("2026-07-03T15:46:33-05:00") // Simulated clock baseline
 };
 
@@ -67,14 +64,6 @@ function formatDateSpanish(dateStr) {
 
 // Router Coordinator
 function switchView(viewId) {
-    // Audit check: log accesses to EHR charts immediately
-    if (viewId === 'odontogram') {
-        const patientSelect = document.getElementById('ehr-patient-select');
-        if (patientSelect && patientSelect.value) {
-            triggerBackgroundAudit(patientSelect.value);
-        }
-    }
-
     document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
 
@@ -118,33 +107,6 @@ function switchView(viewId) {
             viewSubtitle.innerText = "Configuración de horarios laborales semanales para el personal de odontología.";
             renderShiftsList();
             break;
-        case 'audit':
-            viewTitle.innerText = "Registro de Auditoría de Privacidad";
-            viewSubtitle.innerText = "Bitácora inalterable de acceso a expedientes clínicos de pacientes.";
-            renderAuditLogs();
-            break;
-    }
-}
-
-// Background Compliance Logger wrapper
-async function triggerBackgroundAudit(patientId) {
-    if (!appState.currentUser) return;
-    
-    const isoStr = appState.systemTime.toISOString();
-    try {
-        await writeAuditLog(
-            appState.currentUser.id,
-            appState.currentUser.name,
-            appState.currentUser.role,
-            patientId,
-            appState,
-            isoStr
-        );
-        if (appState.currentUser.role === 'admin') {
-            renderAuditLogs();
-        }
-    } catch (err) {
-        console.error("Audit log error:", err.message);
     }
 }
 
@@ -191,6 +153,140 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     }, 800);
 });
 
+// -------------------------------------------------------------
+// USER MANAGEMENT & SHIFTS UI (ADMIN CRUD)
+// -------------------------------------------------------------
+function renderUsersList() {
+    const tbody = document.getElementById('users-table-body');
+    tbody.innerHTML = '';
+
+    appState.users.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${u.name}</strong></td>
+            <td><code>${u.username}</code></td>
+            <td><span class="badge badge-info">${getRoleNameSpanish(u.role)}</span></td>
+            <td>
+                <button class="btn btn-outline btn-sm" id="btn-edit-user-${u.id}"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn btn-danger-outline btn-sm" id="btn-delete-user-${u.id}"><i class="fa-solid fa-trash"></i></button>
+            </td>
+        `;
+        
+        tr.querySelector(`#btn-edit-user-${u.id}`).onclick = () => editUser(u.id);
+        tr.querySelector(`#btn-delete-user-${u.id}`).onclick = () => deleteUser(u.id);
+        tbody.appendChild(tr);
+    });
+}
+
+function openUserModal() {
+    document.getElementById('user-modal-title').innerText = "Agregar Personal Clínico";
+    document.getElementById('user-form').reset();
+    document.getElementById('user-id-field').value = '';
+    document.getElementById('user-username').disabled = false;
+    document.getElementById('user-password').required = true;
+    document.getElementById('user-password').disabled = false;
+    document.getElementById('user-password-hint').innerText = "Ingrese una contraseña segura.";
+    document.getElementById('user-modal').classList.add('active');
+}
+
+function closeUserModal() {
+    document.getElementById('user-modal').classList.remove('active');
+}
+
+function editUser(userId) {
+    const user = appState.users.find(u => u.id === userId);
+    if (!user) return;
+
+    document.getElementById('user-modal-title').innerText = "Editar Personal Clínico";
+    document.getElementById('user-id-field').value = user.id;
+    document.getElementById('user-name').value = user.name;
+    document.getElementById('user-username').value = user.username;
+    document.getElementById('user-username').disabled = true; // Deshabilitar nombre de usuario para evitar desincronizar con Auth de Supabase
+    document.getElementById('user-role').value = user.role;
+    
+    const isSelf = appState.currentUser && appState.currentUser.id === userId;
+    if (isSelf) {
+        document.getElementById('user-password').required = false;
+        document.getElementById('user-password').disabled = false;
+        document.getElementById('user-password').value = '';
+        document.getElementById('user-password-hint').innerText = "Deje en blanco si no desea modificar su contraseña.";
+    } else {
+        document.getElementById('user-password').required = false;
+        document.getElementById('user-password').disabled = true;
+        document.getElementById('user-password').value = '';
+        document.getElementById('user-password-hint').innerText = "Por seguridad, cambie contraseñas borrando y recreando el usuario.";
+    }
+
+    document.getElementById('user-modal').classList.add('active');
+}
+
+async function deleteUser(userId) {
+    const isSelf = appState.currentUser && appState.currentUser.id === userId;
+    if (isSelf) {
+        alert("Seguridad: No se puede eliminar a sí mismo mientras está logueado.");
+        return;
+    }
+
+    if (confirm("¿Está seguro que desea eliminar a este usuario? Perderá el acceso de forma inmediata.")) {
+        try {
+            await deleteUserInDB(userId);
+            appState.users = appState.users.filter(u => u.id !== userId);
+            renderUsersList();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+}
+
+document.getElementById('user-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('user-id-field').value;
+    const name = document.getElementById('user-name').value.trim();
+    const username = document.getElementById('user-username').value.trim();
+    const role = document.getElementById('user-role').value;
+    const password = document.getElementById('user-password').value;
+
+    const duplicate = appState.users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.id !== id);
+    if (duplicate) {
+        alert("El nombre de usuario ya está registrado por otro personal.");
+        return;
+    }
+
+    try {
+        if (!id) {
+            const hash = await hashPassword(password);
+            const newUser = {
+                id: 'usr-' + Date.now(),
+                name,
+                username,
+                role,
+                passwordHash: hash,
+                password: password
+            };
+            const inserted = await insertUserInDB(newUser);
+            appState.users.push(inserted);
+        } else {
+            const idx = appState.users.findIndex(u => u.id === id);
+            if (idx > -1) {
+                const updatedFields = {
+                    name,
+                    role
+                };
+                if (password && appState.currentUser && appState.currentUser.id === id) {
+                    updatedFields.password = password;
+                }
+                const updated = await updateUserInDB(id, updatedFields);
+                Object.assign(appState.users[idx], updated);
+            }
+        }
+
+        renderUsersList();
+        closeUserModal();
+    } catch (err) {
+        alert(err.message);
+    }
+});
+
 function setupRoleAccess(user) {
     document.getElementById('user-display-name').innerText = user.name;
     document.getElementById('user-display-role').innerText = getRoleNameSpanish(user.role);
@@ -208,15 +304,6 @@ function setupRoleAccess(user) {
         adminOnly.forEach(el => el.classList.add('hidden'));
         clinicalOnly.forEach(el => el.classList.add('hidden'));
     }
-}
-
-async function logoutFlow() {
-    await logout();
-    appState.currentUser = null;
-    document.getElementById('main-workspace').classList.remove('active');
-    document.getElementById('login-screen').classList.add('active');
-    document.getElementById('login-username').value = '';
-    document.getElementById('login-password').value = '';
 }
 
 // -------------------------------------------------------------
@@ -244,7 +331,6 @@ function renderPatientsList() {
         
         tr.querySelector(`#btn-view-profile-${patient.id}`).onclick = async () => {
             if (appState.currentUser.role === 'receptionist') {
-                await triggerBackgroundAudit(patient.id);
                 if (patient.evolutionNotes.length === 0) {
                     alert("No se puede exportar el resumen clínico porque el paciente aún no cuenta con notas de evolución.");
                 } else {
@@ -649,8 +735,6 @@ function loadEHRForPatient() {
         clearEHRPanel();
         return;
     }
-
-    triggerBackgroundAudit(patientId);
 
     const patient = appState.patients.find(p => p.id === patientId);
     if (!patient) return;
@@ -1199,128 +1283,6 @@ function exportPatientPDF() {
     exportPatientPDFDirect(patientId, appState);
 }
 
-// -------------------------------------------------------------
-// USER MANAGEMENT & SHIFTS UI (ADMIN CRUD)
-// -------------------------------------------------------------
-function renderUsersList() {
-    const tbody = document.getElementById('users-table-body');
-    tbody.innerHTML = '';
-
-    appState.users.forEach(u => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><strong>${u.name}</strong></td>
-            <td><code>${u.username}</code></td>
-            <td><span class="badge badge-info">${getRoleNameSpanish(u.role)}</span></td>
-            <td>
-                <button class="btn btn-outline btn-sm" id="btn-edit-user-${u.id}"><i class="fa-solid fa-pen"></i></button>
-                <button class="btn btn-danger-outline btn-sm" id="btn-delete-user-${u.id}"><i class="fa-solid fa-trash"></i></button>
-            </td>
-        `;
-        
-        tr.querySelector(`#btn-edit-user-${u.id}`).onclick = () => editUser(u.id);
-        tr.querySelector(`#btn-delete-user-${u.id}`).onclick = () => deleteUser(u.id);
-        tbody.appendChild(tr);
-    });
-}
-
-function openUserModal() {
-    document.getElementById('user-modal-title').innerText = "Agregar Personal Clínico";
-    document.getElementById('user-form').reset();
-    document.getElementById('user-id-field').value = '';
-    document.getElementById('user-password').required = true;
-    document.getElementById('user-password-hint').innerText = "Ingrese una contraseña segura.";
-    document.getElementById('user-modal').classList.add('active');
-}
-
-function closeUserModal() {
-    document.getElementById('user-modal').classList.remove('active');
-}
-
-function editUser(userId) {
-    const user = appState.users.find(u => u.id === userId);
-    if (!user) return;
-
-    document.getElementById('user-modal-title').innerText = "Editar Personal Clínico";
-    document.getElementById('user-id-field').value = user.id;
-    document.getElementById('user-name').value = user.name;
-    document.getElementById('user-username').value = user.username;
-    document.getElementById('user-role').value = user.role;
-    
-    document.getElementById('user-password').required = false;
-    document.getElementById('user-password').value = '';
-    document.getElementById('user-password-hint').innerText = "Deje en blanco si no desea modificar la contraseña.";
-
-    document.getElementById('user-modal').classList.add('active');
-}
-
-async function deleteUser(userId) {
-    if (userId === 'usr-admin') {
-        alert("Seguridad: No se puede eliminar la cuenta del Administrador Principal.");
-        return;
-    }
-
-    if (confirm("¿Está seguro que desea eliminar a este usuario? Perderá el acceso de forma inmediata.")) {
-        try {
-            await deleteUserInDB(userId);
-            appState.users = appState.users.filter(u => u.id !== userId);
-            renderUsersList();
-        } catch (err) {
-            alert(err.message);
-        }
-    }
-}
-
-document.getElementById('user-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const id = document.getElementById('user-id-field').value;
-    const name = document.getElementById('user-name').value.trim();
-    const username = document.getElementById('user-username').value.trim();
-    const role = document.getElementById('user-role').value;
-    const password = document.getElementById('user-password').value;
-
-    const duplicate = appState.users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.id !== id);
-    if (duplicate) {
-        alert("El nombre de usuario ya está registrado por otro personal.");
-        return;
-    }
-
-    try {
-        if (!id) {
-            const hash = await hashPassword(password);
-            const newUser = {
-                id: 'usr-' + Date.now(),
-                name,
-                username,
-                role,
-                passwordHash: hash,
-                password: password
-            };
-            const inserted = await insertUserInDB(newUser);
-            appState.users.push(inserted);
-        } else {
-            const idx = appState.users.findIndex(u => u.id === id);
-            if (idx > -1) {
-                const updatedFields = {
-                    name,
-                    username,
-                    role
-                };
-                if (password) {
-                    updatedFields.passwordHash = await hashPassword(password);
-                }
-                const updated = await updateUserInDB(id, updatedFields);
-                Object.assign(appState.users[idx], updated);
-            }
-        }
-
-        renderUsersList();
-        closeUserModal();
-    } catch (err) {
-        alert(err.message);
-    }
-});
-
 // SHIFTS UI
 function renderShiftsList() {
     const tbody = document.getElementById('shifts-table-body');
@@ -1417,32 +1379,7 @@ async function deleteShift(shiftId) {
     }
 }
 
-// -------------------------------------------------------------
-// COMPLIANCE AUDIT DISPLAY
-// -------------------------------------------------------------
-function renderAuditLogs() {
-    const tbody = document.getElementById('audit-table-body');
-    tbody.innerHTML = '';
 
-    if (appState.auditLogs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No se registran eventos de auditoría.</td></tr>';
-        return;
-    }
-
-    appState.auditLogs.forEach(log => {
-        const dateObj = new Date(log.timestamp);
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><code>${log.id.split('-')[1] || log.id}</code></td>
-            <td><strong>${log.userName}</strong></td>
-            <td><span class="badge badge-info">${log.userRole}</span></td>
-            <td>${log.patientName}</td>
-            <td><code>HC-${log.patientHistory}</code></td>
-            <td><code>${dateObj.toLocaleString('es-PE')}</code></td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
 
 // -------------------------------------------------------------
 // BIND GLOBAL WINDOW EVENT HANDLERS FOR BACKWARD COMPATIBILITY
@@ -1483,7 +1420,6 @@ async function bootstrap() {
         appState.patients = await getPatients();
         appState.shifts = await getShifts();
         appState.appointments = await getAppointments();
-        appState.auditLogs = await getAuditLogs();
     } catch (err) {
         console.error("Error loading application state from database:", err.message);
     }
