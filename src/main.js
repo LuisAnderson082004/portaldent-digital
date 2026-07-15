@@ -1409,6 +1409,15 @@ function exportPatientPDF() {
     exportPatientPDFDirect(patientId, appState);
 }
 
+async function logoutFlow() {
+    try {
+        await logout();
+    } catch (err) {
+        console.error("Error signing out:", err.message);
+    }
+    window.location.reload();
+}
+
 // -------------------------------------------------------------
 // BIND GLOBAL WINDOW EVENT HANDLERS FOR BACKWARD COMPATIBILITY
 // -------------------------------------------------------------
