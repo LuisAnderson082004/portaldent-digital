@@ -164,10 +164,40 @@ export async function getAuditLogs() {
     }
     const { data, error } = await supabase
         .from('audit_logs')
-        .select('*')
-        .order('timestamp', { ascending: false });
+        .select(`
+            id,
+            action,
+            created_at,
+            profiles:user_id ( id, name, role ),
+            patients:patient_id ( id, firstname, lastname, historyNumber )
+        `)
+        .order('created_at', { ascending: false });
+
     if (error) throw error;
-    return data;
+
+    return data.map(log => {
+        const profile = log.profiles || {};
+        const patient = log.patients || {};
+        
+        const roleTranslations = {
+            'admin': 'Administrador',
+            'receptionist': 'Asistente / Recepcionista',
+            'dentist': 'Odontólogo'
+        };
+        const spanishRole = roleTranslations[profile.role] || profile.role || 'Usuario';
+
+        return {
+            id: log.id,
+            userId: profile.id || null,
+            userName: profile.name || 'Desconocido',
+            userRole: spanishRole,
+            patientId: patient.id || null,
+            patientName: patient.firstname && patient.lastname ? `${patient.firstname} ${patient.lastname}` : 'Desconocido',
+            patientHistory: patient.historyNumber ? patient.historyNumber.toString() : '',
+            timestamp: log.created_at,
+            action: log.action
+        };
+    });
 }
 
 export async function insertAuditLog(log) {
@@ -176,13 +206,52 @@ export async function insertAuditLog(log) {
         window.__mock_db_auditLogs__.unshift(log);
         return log;
     }
+    
+    const dbLog = {
+        user_id: log.userId,
+        patient_id: log.patientId,
+        action: 'Acceso a expediente clínico (EHR)'
+    };
+    
+    if (log.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(log.id)) {
+        dbLog.id = log.id;
+    }
+
     const { data, error } = await supabase
         .from('audit_logs')
-        .insert([log])
-        .select()
+        .insert([dbLog])
+        .select(`
+            id,
+            action,
+            created_at,
+            profiles:user_id ( id, name, role ),
+            patients:patient_id ( id, firstname, lastname, historyNumber )
+        `)
         .single();
+        
     if (error) throw error;
-    return data;
+
+    const profile = data.profiles || {};
+    const patient = data.patients || {};
+    
+    const roleTranslations = {
+        'admin': 'Administrador',
+        'receptionist': 'Asistente / Recepcionista',
+        'dentist': 'Odontólogo'
+    };
+    const spanishRole = roleTranslations[profile.role] || profile.role || 'Usuario';
+
+    return {
+        id: data.id,
+        userId: profile.id || null,
+        userName: profile.name || 'Desconocido',
+        userRole: spanishRole,
+        patientId: patient.id || null,
+        patientName: patient.firstname && patient.lastname ? `${patient.firstname} ${patient.lastname}` : 'Desconocido',
+        patientHistory: patient.historyNumber ? patient.historyNumber.toString() : '',
+        timestamp: data.created_at,
+        action: data.action
+    };
 }
 
 // --- USERS / PROFILES CLIENT METHODS ---
