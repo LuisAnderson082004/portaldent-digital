@@ -287,6 +287,131 @@ document.getElementById('user-form').addEventListener('submit', async (e) => {
     }
 });
 
+// Time formatting helper
+function formatTime12Hour(timeStr) {
+    if (!timeStr) return '';
+    const parts = timeStr.split(':');
+    if (parts.length < 2) return timeStr;
+    const hour = parseInt(parts[0], 10);
+    const minute = parts[1];
+    const suffix = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+    return `${String(hour12).padStart(2, '0')}:${minute} ${suffix}`;
+}
+
+// SHIFTS UI
+function renderShiftsList() {
+    const tbody = document.getElementById('shifts-table-body');
+    tbody.innerHTML = '';
+
+    appState.shifts.forEach(s => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${s.dentistName}</strong></td>
+            <td>${getDaySpanish(s.day)}</td>
+            <td>${formatTime12Hour(s.start)}</td>
+            <td>${formatTime12Hour(s.end)}</td>
+            <td>
+                <button class="btn btn-danger-outline btn-sm" id="btn-delete-shift-${s.id}"><i class="fa-solid fa-trash"></i> Eliminar</button>
+            </td>
+        `;
+        
+        tr.querySelector(`#btn-delete-shift-${s.id}`).onclick = () => deleteShift(s.id);
+        tbody.appendChild(tr);
+    });
+}
+
+function getDaySpanish(day) {
+    const days = {
+        'Monday': 'Lunes', 'Tuesday': 'Martes', 'Wednesday': 'Miércoles',
+        'Thursday': 'Jueves', 'Friday': 'Viernes', 'Saturday': 'Sábado', 'Sunday': 'Domingo'
+    };
+    return days[day] || day;
+}
+
+function openShiftModal() {
+    const select = document.getElementById('shift-dentist');
+    select.innerHTML = '';
+
+    const dentists = appState.users.filter(u => u.role === 'dentist');
+    if (dentists.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.innerText = 'No hay odontólogos registrados';
+        option.disabled = true;
+        select.appendChild(option);
+    } else {
+        dentists.forEach(d => {
+            const option = document.createElement('option');
+            option.value = d.id;
+            option.innerText = d.name;
+            select.appendChild(option);
+        });
+    }
+
+    document.getElementById('shift-modal').classList.add('active');
+}
+
+function closeShiftModal() {
+    document.getElementById('shift-modal').classList.remove('active');
+}
+
+document.getElementById('shift-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const dentistId = document.getElementById('shift-dentist').value;
+    const day = document.getElementById('shift-day').value;
+    const start = document.getElementById('shift-start').value;
+    const end = document.getElementById('shift-end').value;
+
+    if (!dentistId) {
+        alert("Error: Por favor, registre y seleccione un odontólogo primero.");
+        return;
+    }
+
+    const dentist = appState.users.find(u => u.id === dentistId);
+    if (!dentist) {
+        alert("Error: Odontólogo no encontrado.");
+        return;
+    }
+
+    const startHour = parseInt(start.split(':')[0]);
+    const endHour = parseInt(end.split(':')[0]);
+    if (startHour >= endHour) {
+        alert("Error de Horario: La hora de salida debe ser posterior a la hora de entrada.");
+        return;
+    }
+
+    try {
+        const newShift = {
+            id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : 'shf-' + Date.now(),
+            dentistId,
+            dentistName: dentist.name,
+            day,
+            start,
+            end
+        };
+
+        const inserted = await insertShiftInDB(newShift);
+        appState.shifts.push(inserted);
+        renderShiftsList();
+        closeShiftModal();
+    } catch (err) {
+        alert(err.message);
+    }
+});
+
+async function deleteShift(shiftId) {
+    if (confirm("¿Desea remover el turno de este odontólogo?")) {
+        try {
+            await deleteShiftInDB(shiftId);
+            appState.shifts = appState.shifts.filter(s => s.id !== shiftId);
+            renderShiftsList();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+}
+
 function setupRoleAccess(user) {
     document.getElementById('user-display-name').innerText = user.name;
     document.getElementById('user-display-role').innerText = getRoleNameSpanish(user.role);
@@ -1283,6 +1408,152 @@ function exportPatientPDF() {
     exportPatientPDFDirect(patientId, appState);
 }
 
+// -------------------------------------------------------------
+// USER MANAGEMENT & SHIFTS UI (ADMIN CRUD)
+// -------------------------------------------------------------
+function renderUsersList() {
+    const tbody = document.getElementById('users-table-body');
+    tbody.innerHTML = '';
+
+    appState.users.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${u.name}</strong></td>
+            <td><code>${u.username}</code></td>
+            <td><span class="badge badge-info">${getRoleNameSpanish(u.role)}</span></td>
+            <td>
+                <button class="btn btn-outline btn-sm" id="btn-edit-user-${u.id}"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn btn-danger-outline btn-sm" id="btn-delete-user-${u.id}"><i class="fa-solid fa-trash"></i></button>
+            </td>
+        `;
+        
+        tr.querySelector(`#btn-edit-user-${u.id}`).onclick = () => editUser(u.id);
+        tr.querySelector(`#btn-delete-user-${u.id}`).onclick = () => deleteUser(u.id);
+        tbody.appendChild(tr);
+    });
+}
+
+function openUserModal() {
+    document.getElementById('user-modal-title').innerText = "Agregar Personal Clínico";
+    document.getElementById('user-form').reset();
+    document.getElementById('user-id-field').value = '';
+    document.getElementById('user-username').disabled = false;
+    document.getElementById('user-password').required = true;
+    document.getElementById('user-password').disabled = false;
+    document.getElementById('user-password-hint').innerText = "Ingrese una contraseña segura.";
+    document.getElementById('user-modal').classList.add('active');
+}
+
+function closeUserModal() {
+    document.getElementById('user-modal').classList.remove('active');
+}
+
+function editUser(userId) {
+    const user = appState.users.find(u => u.id === userId);
+    if (!user) return;
+
+    document.getElementById('user-modal-title').innerText = "Editar Personal Clínico";
+    document.getElementById('user-id-field').value = user.id;
+    document.getElementById('user-name').value = user.name;
+    document.getElementById('user-username').value = user.username;
+    document.getElementById('user-username').disabled = true; // Deshabilitar nombre de usuario para evitar desincronizar con Auth de Supabase
+    document.getElementById('user-role').value = user.role;
+    
+    const isSelf = appState.currentUser && appState.currentUser.id === userId;
+    if (isSelf) {
+        document.getElementById('user-password').required = false;
+        document.getElementById('user-password').disabled = false;
+        document.getElementById('user-password').value = '';
+        document.getElementById('user-password-hint').innerText = "Deje en blanco si no desea modificar su contraseña.";
+    } else {
+        document.getElementById('user-password').required = false;
+        document.getElementById('user-password').disabled = true;
+        document.getElementById('user-password').value = '';
+        document.getElementById('user-password-hint').innerText = "Por seguridad, cambie contraseñas borrando y recreando el usuario.";
+    }
+
+    document.getElementById('user-modal').classList.add('active');
+}
+
+async function deleteUser(userId) {
+    const isSelf = appState.currentUser && appState.currentUser.id === userId;
+    if (isSelf) {
+        alert("Seguridad: No se puede eliminar a sí mismo mientras está logueado.");
+        return;
+    }
+
+    if (confirm("¿Está seguro que desea eliminar a este usuario? Perderá el acceso de forma inmediata.")) {
+        try {
+            await deleteUserInDB(userId);
+            appState.users = appState.users.filter(u => u.id !== userId);
+            renderUsersList();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+}
+
+document.getElementById('user-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('user-id-field').value;
+    const name = document.getElementById('user-name').value.trim();
+    const username = document.getElementById('user-username').value.trim();
+    const role = document.getElementById('user-role').value;
+    const password = document.getElementById('user-password').value;
+
+    const duplicate = appState.users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.id !== id);
+    if (duplicate) {
+        alert("El nombre de usuario ya está registrado por otro personal.");
+        return;
+    }
+
+    try {
+        if (!id) {
+            const hash = await hashPassword(password);
+            const newUser = {
+                id: 'usr-' + Date.now(),
+                name,
+                username,
+                role,
+                passwordHash: hash,
+                password: password
+            };
+            const inserted = await insertUserInDB(newUser);
+            appState.users.push(inserted);
+        } else {
+            const idx = appState.users.findIndex(u => u.id === id);
+            if (idx > -1) {
+                const updatedFields = {
+                    name,
+                    role
+                };
+                if (password && appState.currentUser && appState.currentUser.id === id) {
+                    updatedFields.password = password;
+                }
+                const updated = await updateUserInDB(id, updatedFields);
+                Object.assign(appState.users[idx], updated);
+            }
+        }
+
+        renderUsersList();
+        closeUserModal();
+    } catch (err) {
+        alert(err.message);
+    }
+});
+
+// Time formatting helper
+function formatTime12Hour(timeStr) {
+    if (!timeStr) return '';
+    const parts = timeStr.split(':');
+    if (parts.length < 2) return timeStr;
+    const hour = parseInt(parts[0], 10);
+    const minute = parts[1];
+    const suffix = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+    return `${String(hour12).padStart(2, '0')}:${minute} ${suffix}`;
+}
+
 // SHIFTS UI
 function renderShiftsList() {
     const tbody = document.getElementById('shifts-table-body');
@@ -1293,8 +1564,8 @@ function renderShiftsList() {
         tr.innerHTML = `
             <td><strong>${s.dentistName}</strong></td>
             <td>${getDaySpanish(s.day)}</td>
-            <td>${s.start} AM</td>
-            <td>${s.end.replace('19:00', '07:00 PM').replace('15:00', '03:00 PM')}</td>
+            <td>${formatTime12Hour(s.start)}</td>
+            <td>${formatTime12Hour(s.end)}</td>
             <td>
                 <button class="btn btn-danger-outline btn-sm" id="btn-delete-shift-${s.id}"><i class="fa-solid fa-trash"></i> Eliminar</button>
             </td>
@@ -1318,12 +1589,20 @@ function openShiftModal() {
     select.innerHTML = '';
 
     const dentists = appState.users.filter(u => u.role === 'dentist');
-    dentists.forEach(d => {
+    if (dentists.length === 0) {
         const option = document.createElement('option');
-        option.value = d.id;
-        option.innerText = d.name;
+        option.value = '';
+        option.innerText = 'No hay odontólogos registrados';
+        option.disabled = true;
         select.appendChild(option);
-    });
+    } else {
+        dentists.forEach(d => {
+            const option = document.createElement('option');
+            option.value = d.id;
+            option.innerText = d.name;
+            select.appendChild(option);
+        });
+    }
 
     document.getElementById('shift-modal').classList.add('active');
 }
@@ -1339,7 +1618,16 @@ document.getElementById('shift-form').addEventListener('submit', async (e) => {
     const start = document.getElementById('shift-start').value;
     const end = document.getElementById('shift-end').value;
 
+    if (!dentistId) {
+        alert("Error: Por favor, registre y seleccione un odontólogo primero.");
+        return;
+    }
+
     const dentist = appState.users.find(u => u.id === dentistId);
+    if (!dentist) {
+        alert("Error: Odontólogo no encontrado.");
+        return;
+    }
 
     const startHour = parseInt(start.split(':')[0]);
     const endHour = parseInt(end.split(':')[0]);
@@ -1350,7 +1638,7 @@ document.getElementById('shift-form').addEventListener('submit', async (e) => {
 
     try {
         const newShift = {
-            id: crypto.randomUUID(),
+            id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : 'shf-' + Date.now(),
             dentistId,
             dentistName: dentist.name,
             day,
@@ -1378,8 +1666,6 @@ async function deleteShift(shiftId) {
         }
     }
 }
-
-
 
 // -------------------------------------------------------------
 // BIND GLOBAL WINDOW EVENT HANDLERS FOR BACKWARD COMPATIBILITY
