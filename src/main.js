@@ -10,7 +10,8 @@ import {
     insertUser as insertUserInDB, 
     deleteUser as deleteUserInDB, 
     updateUser as updateUserInDB,
-    updateAppointment
+    updateAppointment,
+    updatePatient as updatePatientInDB
 } from './utils/storage.js';
 import { hashPassword, verifyUser, getRoleNameSpanish, checkSession, logout } from './auth/authEngine.js';
 import { isWithinFourHours, saveAppointment, cancelAppointment } from './modules/appointments.js';
@@ -440,6 +441,11 @@ function renderPatientsList() {
 
     appState.patients.forEach(patient => {
         const tr = document.createElement('tr');
+        const isDisabled = patient.odontogram && patient.odontogram.disabled;
+        if (isDisabled) {
+            tr.style.opacity = '0.65';
+        }
+
         tr.innerHTML = `
             <td><strong>#${patient.historyNumber}</strong></td>
             <td>${patient.dni}</td>
@@ -448,11 +454,25 @@ function renderPatientsList() {
             <td>${patient.phone}</td>
             <td>${patient.email}</td>
             <td>
-                <button class="btn btn-outline btn-sm" id="btn-view-profile-${patient.id}">
-                    <i class="fa-solid fa-folder-open"></i> Ver Expediente
+                <span class="badge ${isDisabled ? 'badge-danger' : 'badge-success'}">
+                    ${isDisabled ? 'Inactivo' : 'Activo'}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-outline btn-sm" id="btn-edit-patient-${patient.id}" title="Editar Información">
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+                <button class="btn ${isDisabled ? 'btn-success-outline' : 'btn-danger-outline'} btn-sm" id="btn-toggle-patient-${patient.id}" title="${isDisabled ? 'Activar Paciente' : 'Desactivar Paciente'}">
+                    <i class="fa-solid ${isDisabled ? 'fa-user-check' : 'fa-user-slash'}"></i>
+                </button>
+                <button class="btn btn-outline btn-sm" id="btn-view-profile-${patient.id}" title="Ver Expediente">
+                    <i class="fa-solid fa-folder-open"></i> Expediente
                 </button>
             </td>
         `;
+        
+        tr.querySelector(`#btn-edit-patient-${patient.id}`).onclick = () => editPatient(patient.id);
+        tr.querySelector(`#btn-toggle-patient-${patient.id}`).onclick = () => togglePatientStatus(patient.id);
         
         tr.querySelector(`#btn-view-profile-${patient.id}`).onclick = async () => {
             if (appState.currentUser.role === 'receptionist') {
@@ -471,6 +491,52 @@ function renderPatientsList() {
         
         tbody.appendChild(tr);
     });
+}
+
+function editPatient(patientId) {
+    const patient = appState.patients.find(p => p.id === patientId);
+    if (!patient) return;
+
+    document.getElementById('patient-modal-title').innerText = "Editar Información de Paciente";
+    document.getElementById('patient-id-field').value = patient.id;
+    document.getElementById('patient-firstname').value = patient.firstname;
+    document.getElementById('patient-lastname').value = patient.lastname;
+    document.getElementById('patient-dni').value = patient.dni;
+    document.getElementById('patient-dob').value = patient.dob;
+    document.getElementById('patient-phone').value = patient.phone;
+    document.getElementById('patient-email').value = patient.email;
+    document.getElementById('patient-address').value = patient.address;
+    document.getElementById('patient-allergies').value = patient.allergies || '';
+    document.getElementById('patient-chronic').value = patient.chronic || '';
+    
+    document.getElementById('patient-dni-error').classList.add('hidden');
+    document.getElementById('patient-modal').classList.add('active');
+}
+
+async function togglePatientStatus(patientId) {
+    const patient = appState.patients.find(p => p.id === patientId);
+    if (!patient) return;
+
+    const isDisabled = patient.odontogram && patient.odontogram.disabled;
+    const actionText = isDisabled ? "ACTIVAR" : "DESACTIVAR";
+    
+    if (confirm(`¿Está seguro que desea ${actionText} a este paciente?`)) {
+        try {
+            if (!patient.odontogram) {
+                patient.odontogram = {
+                    baselineFrozen: false,
+                    baseline: {},
+                    evolution: {}
+                };
+            }
+            patient.odontogram.disabled = !isDisabled;
+            
+            await updatePatientInDB(patientId, { odontogram: patient.odontogram });
+            renderPatientsList();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
 }
 
 function filterPatients() {
@@ -507,9 +573,37 @@ document.getElementById('patient-form').addEventListener('submit', async (e) => 
     const chronic = document.getElementById('patient-chronic').value.trim();
 
     try {
-        await addPatient({
-            id, firstname, lastname, dni, dob, phone, email, address, allergies, chronic
-        }, appState);
+        if (!id) {
+            await addPatient({
+                firstname, lastname, dni, dob, phone, email, address, allergies, chronic
+            }, appState);
+        } else {
+            const idx = appState.patients.findIndex(p => p.id === id);
+            if (idx > -1) {
+                const existing = appState.patients[idx];
+                if (existing.dni !== dni) {
+                    const duplicate = appState.patients.find(p => p.dni === dni && p.id !== id);
+                    if (duplicate) {
+                        throw new Error("Este DNI ya está registrado.");
+                    }
+                }
+                
+                const updatedFields = {
+                    firstname,
+                    lastname,
+                    dni,
+                    dob,
+                    phone,
+                    email,
+                    address,
+                    allergies: allergies || 'Ninguna',
+                    chronic: chronic || 'Ninguna'
+                };
+                
+                const updated = await updatePatientInDB(id, updatedFields);
+                Object.assign(appState.patients[idx], updated);
+            }
+        }
         renderPatientsList();
         closePatientModal();
     } catch (err) {
@@ -681,9 +775,10 @@ function searchPatientForAppointment() {
     }
 
     const matches = appState.patients.filter(p => 
-        p.firstname.toLowerCase().includes(query) || 
+        !(p.odontogram && p.odontogram.disabled) &&
+        (p.firstname.toLowerCase().includes(query) || 
         p.lastname.toLowerCase().includes(query) || 
-        p.dni.includes(query)
+        p.dni.includes(query))
     );
 
     if (matches.length > 0) {
@@ -849,7 +944,8 @@ function populateEHRSelector() {
     appState.patients.forEach(p => {
         const option = document.createElement('option');
         option.value = p.id;
-        option.innerText = `${p.firstname} ${p.lastname} (DNI: ${p.dni})`;
+        const statusText = (p.odontogram && p.odontogram.disabled) ? ' (Inactivo)' : '';
+        option.innerText = `${p.firstname} ${p.lastname} (DNI: ${p.dni})${statusText}`;
         select.appendChild(option);
     });
 }
@@ -1448,6 +1544,8 @@ window.openShiftModal = openShiftModal;
 window.closeShiftModal = closeShiftModal;
 window.deleteShift = deleteShift;
 window.selectSurfaceClick = selectSurfaceClick;
+window.editPatient = editPatient;
+window.togglePatientStatus = togglePatientStatus;
 
 // Application Initialization Bootstrap
 async function bootstrap() {
@@ -1533,8 +1631,9 @@ function setupPatientSearch() {
             matches.forEach(p => {
                 const item = document.createElement('div');
                 item.className = 'search-result-item';
+                const statusText = (p.odontogram && p.odontogram.disabled) ? ' <span class="badge badge-danger">Inactivo</span>' : '';
                 item.innerHTML = `
-                    <span class="search-result-name">${p.firstname} ${p.lastname}</span>
+                    <span class="search-result-name">${p.firstname} ${p.lastname}${statusText}</span>
                     <span class="search-result-dni">DNI: ${p.dni}</span>
                 `;
                 item.addEventListener('click', () => {
