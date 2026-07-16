@@ -117,10 +117,10 @@ class OdontogramControllerClass {
         const inserted = await insertOdontogramRecord(record);
         
         // Push record and rebuild state locally
-        this.rawRecords.push(inserted[0]);
+        this.rawRecords.push(inserted);
         this.reconstructedState = this.reconstructState(this.rawRecords);
 
-        return inserted[0];
+        return inserted;
     }
 }
 
