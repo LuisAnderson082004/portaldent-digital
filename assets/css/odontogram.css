@@ -454,3 +454,9 @@
 #odontogram-finding-modal label {
     font-weight: 600;
 }
+
+.tooth-svg text {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    pointer-events: none;
+    user-select: none;
+}
