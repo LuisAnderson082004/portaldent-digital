@@ -1,124 +1,138 @@
-/* odontogram.js - Logic & Validations for Interactive Dental Chart (FDI / COP Norms) */
+/* odontogram.js - Modular State Controller, Memoization Cache, and Debounce Handlers */
 
-export const HALLAZGOS_CONFIG = {
-    'AOF': { code: 'AOF', name: 'Aparato Ortodóntico Fijo', label: '1.1 AOF', isSurface: false, defaultColor: 'azul' },
-    'AOR': { code: 'AOR', name: 'Aparato Ortodóntico Removible', label: '1.2 AOR', isSurface: false, defaultColor: 'azul' },
-    'C': { code: 'C', name: 'Caries', label: '1.3 C', isSurface: true, defaultColor: 'rojo' },
-    'CD': { code: 'CD', name: 'Corona Definitiva', label: '1.4 CD', isSurface: false, defaultColor: 'azul' },
-    'CT': { code: 'CT', name: 'Corona Temporal', label: '1.5 CT', isSurface: false, defaultColor: 'rojo' },
-    'DES': { code: 'DES', name: 'Desgaste Oclusal/Incisal', label: '1.6 DES', isSurface: false, defaultColor: 'rojo' },
-    'DIA': { code: 'DIA', name: 'Diastema', label: '1.7 DIA', isSurface: false, defaultColor: 'azul' },
-    'A': { code: 'A', name: 'Diente Ausente', label: '1.8 A', isSurface: false, defaultColor: 'azul' },
-    'DIS': { code: 'DIS', name: 'Diente Discromico', label: '1.9 DIS', isSurface: false, defaultColor: 'rojo' },
-    'ECT': { code: 'ECT', name: 'Diente Ectópico', label: '1.10 ECT', isSurface: false, defaultColor: 'rojo' },
-    'CLV': { code: 'CLV', name: 'Diente en Clavija', label: '1.11 CLV', isSurface: false, defaultColor: 'azul' },
-    'EXT': { code: 'EXT', name: 'Diente Extruido', label: '1.12 EXT', isSurface: false, defaultColor: 'rojo' },
-    'INT': { code: 'INT', name: 'Diente Intruido', label: '1.13 INT', isSurface: false, defaultColor: 'rojo' },
-    'EDT': { code: 'EDT', name: 'Edéntulo Total', label: '1.14 EDT', isSurface: false, defaultColor: 'azul' },
-    'FRA': { code: 'FRA', name: 'Fractura', label: '1.15 FRA', isSurface: false, defaultColor: 'rojo' },
-    'GEM': { code: 'GEM', name: 'Geminación/Fusión', label: '1.16 GEM', isSurface: false, defaultColor: 'azul' },
-    'GIR': { code: 'GIR', name: 'Giroversión', label: '1.17 GIR', isSurface: false, defaultColor: 'rojo' },
-    'IMPAC': { code: 'IMPAC', name: 'Impactación', label: '1.18 IMPAC', isSurface: false, defaultColor: 'rojo' },
-    'IMP': { code: 'IMP', name: 'Implante', label: '1.19 IMP', isSurface: false, defaultColor: 'azul' },
-    'MAC': { code: 'MAC', name: 'Macrodoncia', label: '1.20 MAC', isSurface: false, defaultColor: 'rojo' },
-    'MIC': { code: 'MIC', name: 'Microdoncia', label: '1.21 MIC', isSurface: false, defaultColor: 'rojo' },
-    'MIG': { code: 'MIG', name: 'Migración', label: '1.22 MIG', isSurface: false, defaultColor: 'rojo' },
-    'MOV': { code: 'MOV', name: 'Movilidad', label: '1.23 MOV', isSurface: false, defaultColor: 'rojo' },
-    'PF': { code: 'PF', name: 'Prótesis Fija', label: '1.24 PF', isSurface: false, defaultColor: 'azul' },
-    'PR': { code: 'PR', name: 'Prótesis Removible', label: '1.25 PR', isSurface: false, defaultColor: 'azul' },
-    'PT': { code: 'PT', name: 'Prótesis Total', label: '1.26 PT', isSurface: false, defaultColor: 'azul' },
-    'RR': { code: 'RR', name: 'Remanente Radicular', label: '1.27 RR', isSurface: false, defaultColor: 'rojo' },
-    'R': { code: 'R', name: 'Restauración Definitiva', label: '1.28 R', isSurface: true, defaultColor: 'azul' },
-    'RT': { code: 'RT', name: 'Restauración Temporal', label: '1.29 RT', isSurface: true, defaultColor: 'rojo' },
-    'SI': { code: 'SI', name: 'Semi-impactación', label: '1.30 SI', isSurface: false, defaultColor: 'rojo' },
-    'SUP': { code: 'SUP', name: 'Supernumerario', label: '1.31 SUP', isSurface: false, defaultColor: 'azul' },
-    'TRA': { code: 'TRA', name: 'Transposición', label: '1.32 TRA', isSurface: false, defaultColor: 'rojo' },
-    'TP': { code: 'TP', name: 'Tratamiento Pulpar', label: '1.33 TP', isSurface: false, defaultColor: 'azul' }
-};
+import { validateClinicalFinding } from '../utils/odontogramRules.js';
+import { getOdontogramRecords, insertOdontogramRecord } from '../utils/storage.js';
 
-/**
- * Rebuilds the structured dental arch state from atomic database records.
- * @param {Array} records - List of public.odontogram_records rows
- * @returns {Object} { baseline: {...}, evolution: {...} }
- */
-export function reconstructOdontogramState(records) {
-    const baseline = {};
-    const evolution = {};
+export { HALLAZGOS_CONFIG } from '../utils/odontogramRules.js';
 
-    // Sort records sequentially by created_at to apply them in order
-    const sorted = [...records].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+class OdontogramControllerClass {
+    constructor() {
+        this.currentPatientId = null;
+        this.rawRecords = [];
+        this.reconstructedState = { baseline: {}, evolution: {} };
+        this.toothStateCache = new Map(); // tooth_id -> JSON string of state
+        this.isFrozen = false;
+    }
 
-    sorted.forEach(r => {
-        const tId = r.tooth_id;
-        const target = r.is_baseline ? baseline : evolution;
+    /**
+     * Loads patient odontogram records on demand.
+     */
+    async loadPatientOdontogram(patientId) {
+        this.currentPatientId = patientId;
+        // On-demand selective loading of patient-specific records
+        this.rawRecords = await getOdontogramRecords(patientId);
+        this.reconstructedState = this.reconstructState(this.rawRecords);
+        
+        // Reset cache for new patient
+        this.toothStateCache.clear();
+        this.isFrozen = false;
+        
+        return this.reconstructedState;
+    }
 
-        if (!target[tId]) {
-            target[tId] = {
-                findings: [],
-                surfaces: {}
+    /**
+     * Reconstructs odontogram state from atomic rows.
+     */
+    reconstructState(records) {
+        const baseline = {};
+        const evolution = {};
+
+        const sorted = [...records].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+        sorted.forEach(r => {
+            const tId = r.tooth_id;
+            const target = r.is_baseline ? baseline : evolution;
+
+            if (!target[tId]) {
+                target[tId] = {
+                    findings: [],
+                    surfaces: {}
+                };
+            }
+
+            const findingObj = {
+                id: r.id,
+                tipo: r.tipo_hallazgo,
+                estado: r.estado,
+                especificaciones: r.especificaciones,
+                surface: r.surface,
+                created_at: r.created_at
             };
+
+            if (r.surface) {
+                target[tId].surfaces[r.surface] = findingObj;
+            } else {
+                if (r.tipo_hallazgo === 'A') {
+                    target[tId].status = r.is_baseline ? 'absent' : 'extracted';
+                }
+                target[tId].findings.push(findingObj);
+            }
+        });
+
+        return { baseline, evolution };
+    }
+
+    /**
+     * Checks if a tooth state has actually changed compared to the cache (pure JS memoization).
+     * @returns {boolean} True if the state changed, False if identical (no re-render needed).
+     */
+    didToothStateChange(toothId) {
+        const toothBaseline = this.reconstructedState.baseline[toothId] || null;
+        const toothEvolution = this.reconstructedState.evolution[toothId] || null;
+        const currentStateStr = JSON.stringify({ toothBaseline, toothEvolution });
+
+        const cachedStateStr = this.toothStateCache.get(toothId);
+        if (cachedStateStr === currentStateStr) {
+            return false; // Memoized, no change
         }
 
-        const findingObj = {
-            id: r.id,
-            tipo: r.tipo_hallazgo,
-            estado: r.estado,
-            especificaciones: r.especificaciones,
-            surface: r.surface,
-            created_at: r.created_at
+        // Cache miss: Update cache and return true
+        this.toothStateCache.set(toothId, currentStateStr);
+        return true;
+    }
+
+    /**
+     * Saves a record atomically: validates, posts to server, updates state.
+     */
+    async saveOdontogramRecord(recordData, isBaseline, authorId) {
+        if (isBaseline && this.isFrozen) {
+            throw new Error("El odontograma inicial de admisión está congelado y es inalterable.");
+        }
+
+        // Validate the structure using decoupled rules
+        validateClinicalFinding(recordData, this.reconstructedState);
+
+        const record = {
+            patient_id: this.currentPatientId,
+            tooth_id: recordData.tooth_id,
+            surface: recordData.surface,
+            tipo_hallazgo: recordData.tipo_hallazgo,
+            estado: recordData.estado,
+            especificaciones: recordData.especificaciones,
+            is_baseline: isBaseline,
+            author_id: authorId
         };
 
-        if (r.surface) {
-            target[tId].surfaces[r.surface] = findingObj;
-        } else {
-            // Specific status flags
-            if (r.tipo_hallazgo === 'A') {
-                target[tId].status = r.is_baseline ? 'absent' : 'extracted';
-            }
-            target[tId].findings.push(findingObj);
-        }
-    });
+        // Atomicity: Only update local state AFTER successful server write
+        const inserted = await insertOdontogramRecord(record);
+        
+        // Push record and rebuild state locally
+        this.rawRecords.push(inserted[0]);
+        this.reconstructedState = this.reconstructState(this.rawRecords);
 
-    return { baseline, evolution };
-}
-
-/**
- * Validates clinical constraints prior to registering a new finding.
- */
-export function validateFinding(findingData, currentArchState) {
-    const { toothId, tipo_hallazgo, especificaciones } = findingData;
-    const { baseline, evolution } = currentArchState;
-
-    if (!especificaciones || especificaciones.trim().length === 0) {
-        throw new Error("El campo 'Especificaciones' (Rubro IX de la Norma Técnica) es de carácter obligatorio.");
-    }
-
-    const baselineData = baseline[toothId] || { findings: [], surfaces: {} };
-    const evolutionData = evolution[toothId] || { findings: [], surfaces: {} };
-
-    const isAbsentInBaseline = baselineData.status === 'absent';
-    const isExtractedInEvolution = evolutionData.status === 'extracted';
-
-    // Block findings on absent/extracted teeth (except registering absence/extraction itself)
-    if (tipo_hallazgo !== 'A' && (isAbsentInBaseline || isExtractedInEvolution)) {
-        throw new Error(`VALIDACIÓN DE INTEGRIDAD: La pieza dental ${toothId} se encuentra marcada como AUSENTE o EXTRAÍDA. No se permite registrar hallazgos o tratamientos en ella.`);
-    }
-
-    const config = HALLAZGOS_CONFIG[tipo_hallazgo];
-    if (!config) {
-        throw new Error("Hallazgo clínico no identificado.");
+        return inserted[0];
     }
 }
 
+export const OdontogramController = new OdontogramControllerClass();
+
 /**
- * Freezes the baseline/admission state.
+ * Debounce helper to prevent excessive rendering during quick clinical sequences.
  */
-export function saveBaselineState(patient) {
-    if (patient.odontogram && patient.odontogram.baselineFrozen) {
-        throw new Error("El estado inicial de admisión ya se encuentra congelado.");
-    }
-    if (!patient.odontogram) {
-        patient.odontogram = {};
-    }
-    patient.odontogram.baselineFrozen = true;
+export function debounce(func, wait = 300) {
+    let timeout;
+    return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
 }
