@@ -270,15 +270,11 @@
                     <div class="ehr-main">
                         <div class="card odontogram-container-card">
                             <div class="odontogram-header">
-                                <h3>Odontograma Gráfico Interactivo</h3>
-                                <div class="btn-group">
-                                    <button class="btn btn-sm btn-outline active" id="btn-odontogram-mode-baseline" onclick="setOdontogramMode('baseline')">Baseline (Inicial)</button>
-                                    <button class="btn btn-sm btn-outline" id="btn-odontogram-mode-evolution" onclick="setOdontogramMode('evolution')">Tratamiento & Evolución</button>
-                                </div>
+                                <h3>Odontograma de Admisión (Inicial)</h3>
                             </div>
 
                             <div class="odontogram-help alert alert-info py-2 my-2">
-                                <span id="odontogram-help-text">Modo Baseline: Configure el estado de ingreso del paciente. Al guardar, este registro se congelará de forma legal.</span>
+                                <span id="odontogram-help-text">Configure el estado dental de ingreso del paciente. Al congelar y guardar, este registro inicial se volverá inalterable legalmente.</span>
                             </div>
 
                             <!-- Interactive Dental Canvas -->
@@ -322,12 +318,7 @@
                                     <button class="btn btn-warning" id="btn-save-baseline" onclick="saveBaselineState()"><i class="fa-solid fa-lock"></i> Congelar & Guardar Estado Inicial</button>
                                     <span id="baseline-saved-indicator" class="text-success hidden"><i class="fa-solid fa-circle-check"></i> Estado Inicial Legal Congelado</span>
                                 </div>
-                                <div id="evolution-actions" class="hidden">
-                                    <div class="alert alert-info py-3" style="font-weight: 600; display: flex; align-items: center; gap: 10px;">
-                                        <i class="fa-solid fa-circle-info" style="font-size: 1.25rem;"></i>
-                                        <span>Modo Evolución Activo: Seleccione un diente o superficie en el odontograma para registrar notas, diagnósticos o procedimientos clínicos.</span>
-                                    </div>
-                                </div>
+
                             </div>
                         </div>
 
