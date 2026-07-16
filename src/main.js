@@ -19,7 +19,7 @@ import {
 import { hashPassword, verifyUser, getRoleNameSpanish, checkSession, logout } from './auth/authEngine.js';
 import { isWithinFourHours, saveAppointment, cancelAppointment } from './modules/appointments.js';
 import { calculateAge, addPatient, addEvolutionNote } from './modules/patients.js';
-import { saveBaselineState, reconstructOdontogramState } from './modules/odontogram.js';
+import { saveBaselineState, reconstructOdontogramState, validateFinding } from './modules/odontogram.js';
 import { exportPatientPDFDirect } from './utils/pdf-generator.js';
 
 // Application State
@@ -1142,10 +1142,13 @@ function createToothElement(tId, patient) {
     div.id = `tooth-block-${tId}`;
     div.setAttribute('data-tooth', tId);
 
-    const isAbsentInBaseline = patient.odontogram.baseline[tId] === 'absent';
-    const isExtractedInEvolution = patient.odontogram.evolution[tId] && patient.odontogram.evolution[tId].status === 'extracted';
+    const baselineData = patient.odontogram.baseline[tId] || { findings: [], surfaces: {} };
+    const evolutionData = patient.odontogram.evolution[tId] || { findings: [], surfaces: {} };
 
-    if (isAbsentInBaseline || isExtractedInEvolution) {
+    // Evolution overrides baseline status (absent / extracted)
+    const toothStatus = evolutionData.status || baselineData.status || null;
+
+    if (toothStatus === 'absent' || toothStatus === 'extracted') {
         div.classList.add('absent');
     }
 
@@ -1170,7 +1173,6 @@ function createToothElement(tId, patient) {
     svgWrapper.style.width = svgW + 'px';
     svgWrapper.style.height = totalH + 'px';
 
-    // Build crown surfaces (5 interactive polygons)
     const crownOffsetY = isLower ? rootH : 0;
     const rootOffsetY = isLower ? 0 : crownH;
     const cX = (svgW - crownW) / 2; // center crown horizontally
@@ -1198,52 +1200,140 @@ function createToothElement(tId, patient) {
     svgStr += `<polygon points="${l},${t} ${l},${b} ${il},${ib} ${il},${it}" class="surface mesial" data-surface="mesial"></polygon>`;
     svgStr += `<polygon points="${il},${it} ${ir},${it} ${ir},${ib} ${il},${ib}" class="surface occlusal" data-surface="occlusal"></polygon>`;
 
-    // --- ABSENT / EXTRACTED CROSS ---
-    if (isAbsentInBaseline || isExtractedInEvolution) {
-        const crossColor = isExtractedInEvolution ? '#ef4444' : '#0043c7';
-        svgStr += `<line class="absent-line-new" x1="${l + 2}" y1="${t + 2}" x2="${r - 2}" y2="${b - 2}" stroke="${crossColor}" stroke-width="2.5" />`;
-        svgStr += `<line class="absent-line-new" x1="${r - 2}" y1="${t + 2}" x2="${l + 2}" y2="${b - 2}" stroke="${crossColor}" stroke-width="2.5" />`;
-    }
+    // Merge active findings
+    const activeFindings = [...baselineData.findings, ...evolutionData.findings];
 
-    // --- CROWNS (CC, CF, CMC, 3/4, CV) ---
-    const baselineCrown = patient.odontogram.baseline[tId] && patient.odontogram.baseline[tId].status === 'crown' ? patient.odontogram.baseline[tId] : null;
-    const evolutionCrown = patient.odontogram.evolution[tId] && patient.odontogram.evolution[tId].status === 'crown' ? patient.odontogram.evolution[tId] : null;
-    const activeCrown = evolutionCrown || baselineCrown;
-    if (activeCrown) {
-        const color = activeCrown.estado ? '#0043c7' : '#ef4444';
-        svgStr += `<circle cx="${midX}" cy="${midY}" r="21" stroke="${color}" stroke-width="2.5" fill="none" />`;
-        svgStr += `<text x="${midX}" y="${isLower ? totalH - 2 : 11}" font-size="8.5" font-weight="700" fill="${color}" text-anchor="middle">${activeCrown.type}</text>`;
-    }
+    activeFindings.forEach(f => {
+        const color = f.estado ? '#0043c7' : '#ef4444'; // Azul vs Rojo
+        const textY = isLower ? totalH - 1.5 : 9.5;
 
-    // --- PROSTHESIS (PF, PR) ---
-    const baselineProsthesis = patient.odontogram.baseline[tId] && patient.odontogram.baseline[tId].status === 'prosthesis' ? patient.odontogram.baseline[tId] : null;
-    const evolutionProsthesis = patient.odontogram.evolution[tId] && patient.odontogram.evolution[tId].status === 'prosthesis' ? patient.odontogram.evolution[tId] : null;
-    const activeProsthesis = evolutionProsthesis || baselineProsthesis;
-    if (activeProsthesis) {
-        const color = activeProsthesis.estado ? '#0043c7' : '#ef4444';
-        svgStr += `<line x1="${l}" y1="${t + 12}" x2="${r}" y2="${t + 12}" stroke="${color}" stroke-width="2" />`;
-        svgStr += `<line x1="${l}" y1="${t + 28}" x2="${r}" y2="${t + 28}" stroke="${color}" stroke-width="2" />`;
-        svgStr += `<text x="${midX}" y="${isLower ? totalH - 2 : 11}" font-size="8.5" font-weight="700" fill="${color}" text-anchor="middle">${activeProsthesis.type}</text>`;
-    }
-
-    // --- REMANENTE RADICULAR (RR) ---
-    const baselineRemanente = patient.odontogram.baseline[tId] && patient.odontogram.baseline[tId].status === 'remanente' ? patient.odontogram.baseline[tId] : null;
-    const evolutionRemanente = patient.odontogram.evolution[tId] && patient.odontogram.evolution[tId].status === 'remanente' ? patient.odontogram.evolution[tId] : null;
-    const activeRemanente = evolutionRemanente || baselineRemanente;
-    if (activeRemanente) {
-        const color = '#ef4444'; // RR is always pathological (red)
-        svgStr += `<text x="${midX}" y="${rootOffsetY + rootH / 2 + 3}" font-size="9" font-weight="800" fill="${color}" text-anchor="middle">RR</text>`;
-    }
-
-    // --- TRATAMIENTO PULPAR (TP) ---
-    const baselinePulpar = patient.odontogram.baseline[tId] && patient.odontogram.baseline[tId].status === 'pulpar' ? patient.odontogram.baseline[tId] : null;
-    const evolutionPulpar = patient.odontogram.evolution[tId] && patient.odontogram.evolution[tId].status === 'pulpar' ? patient.odontogram.evolution[tId] : null;
-    const activePulpar = evolutionPulpar || baselinePulpar;
-    if (activePulpar) {
-        const color = activePulpar.estado ? '#0043c7' : '#ef4444';
-        svgStr += `<line x1="${midX}" y1="${t + 20}" x2="${midX}" y2="${rootOffsetY + rootH}" stroke="${color}" stroke-width="2.5" />`;
-        svgStr += `<text x="${midX}" y="${isLower ? totalH - 2 : 11}" font-size="8.5" font-weight="700" fill="${color}" text-anchor="middle">TP</text>`;
-    }
+        switch (f.tipo) {
+            case 'A': // Diente Ausente / Extracción
+                svgStr += `<line x1="${l + 2}" y1="${t + 2}" x2="${r - 2}" y2="${b - 2}" stroke="${color}" stroke-width="2.5" />`;
+                svgStr += `<line x1="${r - 2}" y1="${t + 2}" x2="${l + 2}" y2="${b - 2}" stroke="${color}" stroke-width="2.5" />`;
+                break;
+            case 'CD': // Corona Definitiva
+            case 'CT': // Corona Temporal
+                svgStr += `<circle cx="${midX}" cy="${midY}" r="21" stroke="${color}" stroke-width="2.5" fill="none" />`;
+                svgStr += `<text x="${midX}" y="${textY}" font-size="8" font-weight="800" fill="${color}" text-anchor="middle">${f.tipo === 'CD' ? 'CD' : 'CT'}</text>`;
+                break;
+            case 'AOF': // Aparato Ortodóntico Fijo
+                const sqY = isLower ? rootOffsetY + rootH - 8 : rootOffsetY + 2;
+                // Square 1
+                svgStr += `<rect x="${midX - 12}" y="${sqY}" width="6" height="6" stroke="${color}" stroke-width="1.2" fill="none" />`;
+                svgStr += `<line x1="${midX - 12}" y1="${sqY}" x2="${midX - 6}" y2="${sqY + 6}" stroke="${color}" stroke-width="1" />`;
+                svgStr += `<line x1="${midX - 6}" y1="${sqY}" x2="${midX - 12}" y2="${sqY + 6}" stroke="${color}" stroke-width="1" />`;
+                // Square 2
+                svgStr += `<rect x="${midX + 6}" y="${sqY}" width="6" height="6" stroke="${color}" stroke-width="1.2" fill="none" />`;
+                svgStr += `<line x1="${midX + 6}" y1="${sqY}" x2="${midX + 12}" y2="${sqY + 6}" stroke="${color}" stroke-width="1" />`;
+                svgStr += `<line x1="${midX + 12}" y1="${sqY}" x2="${midX + 6}" y2="${sqY + 6}" stroke="${color}" stroke-width="1" />`;
+                // Connecting line
+                svgStr += `<line x1="${midX - 6}" y1="${sqY + 3}" x2="${midX + 6}" y2="${sqY + 3}" stroke="${color}" stroke-width="1.5" />`;
+                break;
+            case 'AOR': // Aparato Ortodóntico Removible
+                const zzY = isLower ? rootOffsetY + rootH - 4 : rootOffsetY + 4;
+                svgStr += `<path d="M ${l} ${zzY} L ${l+10} ${zzY-4} L ${l+20} ${zzY+4} L ${l+30} ${zzY-4} L ${r} ${zzY}" stroke="${color}" stroke-width="1.8" fill="none" />`;
+                break;
+            case 'DES': // Desgaste
+                svgStr += `<text x="${midX}" y="${textY}" font-size="8" font-weight="800" fill="${color}" text-anchor="middle">DES</text>`;
+                break;
+            case 'DIA': // Diastema
+                svgStr += `<path d="M ${l - 1} ${t + 10} Q ${l - 4} ${midY} ${l - 1} ${b - 10}" stroke="${color}" stroke-width="2" fill="none"/>`;
+                svgStr += `<path d="M ${r + 1} ${t + 10} Q ${r + 4} ${midY} ${r + 1} ${b - 10}" stroke="${color}" stroke-width="2" fill="none"/>`;
+                break;
+            case 'DIS': // Discromico
+                svgStr += `<text x="${midX}" y="${textY}" font-size="8" font-weight="800" fill="${color}" text-anchor="middle">DIS</text>`;
+                break;
+            case 'ECT': // Ectópico
+                svgStr += `<text x="${midX}" y="${textY}" font-size="9.5" font-weight="800" fill="${color}" text-anchor="middle">E</text>`;
+                break;
+            case 'CLV': // Clavija
+                svgStr += `<polygon points="${midX},${t - 1} ${l + 1},${b - 1} ${r - 1},${b - 1}" stroke="${color}" stroke-width="1.8" fill="none" />`;
+                break;
+            case 'EXT': // Extruido
+                const arrExtY = isLower ? rootOffsetY + rootH + 12 : rootOffsetY - 12;
+                const tipExtY = isLower ? rootOffsetY + rootH : rootOffsetY;
+                svgStr += `<line x1="${midX}" y1="${arrExtY}" x2="${midX}" y2="${tipExtY}" stroke="${color}" stroke-width="2" />`;
+                svgStr += `<polygon points="${midX},${tipExtY} ${midX-3},${isLower ? tipExtY+5 : tipExtY-5} ${midX+3},${isLower ? tipExtY+5 : tipExtY-5}" fill="${color}" />`;
+                break;
+            case 'INT': // Intruido
+                const arrIntY = isLower ? rootOffsetY + rootH : rootOffsetY;
+                const tipIntY = isLower ? rootOffsetY + rootH + 12 : rootOffsetY - 12;
+                svgStr += `<line x1="${midX}" y1="${arrIntY}" x2="${midX}" y2="${tipIntY}" stroke="${color}" stroke-width="2" />`;
+                svgStr += `<polygon points="${midX},${tipIntY} ${midX-3},${isLower ? tipIntY-5 : tipIntY+5} ${midX+3},${isLower ? tipIntY-5 : tipIntY+5}" fill="${color}" />`;
+                break;
+            case 'EDT': // Edéntulo Total
+                svgStr += `<line x1="${l}" y1="${midY}" x2="${r}" y2="${midY}" stroke="${color}" stroke-width="2.5" />`;
+                break;
+            case 'FRA': // Fractura
+                svgStr += `<line x1="${l + 4}" y1="${t + 8}" x2="${r - 4}" y2="${b - 8}" stroke="${color}" stroke-width="2.5" />`;
+                break;
+            case 'GEM': // Geminación/Fusión
+                const gemY = isLower ? totalH - 4 : 8;
+                svgStr += `<circle cx="${midX - 5}" cy="${gemY}" r="4.5" stroke="${color}" stroke-width="1.5" fill="none" />`;
+                svgStr += `<circle cx="${midX + 5}" cy="${gemY}" r="4.5" stroke="${color}" stroke-width="1.5" fill="none" />`;
+                break;
+            case 'GIR': // Giroversión
+                const girY = isLower ? totalH - 5 : 5;
+                svgStr += `<path d="M ${midX - 10} ${girY} Q ${midX} ${isLower ? girY - 6 : girY + 6} ${midX + 10} ${girY}" fill="none" stroke="${color}" stroke-width="1.5" />`;
+                svgStr += `<polygon points="${midX+10},${girY} ${midX+6},${isLower ? girY-3 : girY+3} ${midX+6},${isLower ? girY+3 : girY-3}" fill="${color}" />`;
+                break;
+            case 'IMPAC': // Impactación
+                svgStr += `<text x="${midX}" y="${textY}" font-size="9.5" font-weight="800" fill="${color}" text-anchor="middle">I</text>`;
+                break;
+            case 'IMP': // Implante
+                svgStr += `<text x="${midX}" y="${rootOffsetY + rootH / 2 + 3}" font-size="9" font-weight="800" fill="${color}" text-anchor="middle">IMP</text>`;
+                break;
+            case 'MAC': // Macrodoncia
+                svgStr += `<text x="${midX}" y="${textY}" font-size="8" font-weight="800" fill="${color}" text-anchor="middle">MAC</text>`;
+                break;
+            case 'MIC': // Microdoncia
+                svgStr += `<text x="${midX}" y="${textY}" font-size="8" font-weight="800" fill="${color}" text-anchor="middle">MIC</text>`;
+                break;
+            case 'MIG': // Migración
+                svgStr += `<line x1="${l + 2}" y1="${midY}" x2="${r - 2}" y2="${midY}" stroke="${color}" stroke-width="2" />`;
+                svgStr += `<polygon points="${r-2},${midY} ${r-6},${midY-3} ${r-6},${midY+3}" fill="${color}" />`;
+                break;
+            case 'MOV': // Movilidad
+                svgStr += `<text x="${midX}" y="${textY}" font-size="8" font-weight="800" fill="${color}" text-anchor="middle">MOV</text>`;
+                break;
+            case 'PF': // Prótesis Fija
+                svgStr += `<line x1="${l}" y1="${t + 12}" x2="${r}" y2="${t + 12}" stroke="${color}" stroke-width="2" />`;
+                svgStr += `<line x1="${l}" y1="${t + 28}" x2="${r}" y2="${t + 28}" stroke="${color}" stroke-width="2" />`;
+                svgStr += `<text x="${midX}" y="${textY}" font-size="8" font-weight="800" fill="${color}" text-anchor="middle">PF</text>`;
+                break;
+            case 'PR': // Prótesis Removible
+                const prY = isLower ? rootOffsetY + rootH - 8 : rootOffsetY + 2;
+                svgStr += `<line x1="${l}" y1="${prY}" x2="${r}" y2="${prY}" stroke="${color}" stroke-width="1.8" />`;
+                svgStr += `<line x1="${l}" y1="${prY + 4}" x2="${r}" y2="${prY + 4}" stroke="${color}" stroke-width="1.8" />`;
+                break;
+            case 'PT': // Prótesis Total
+                svgStr += `<line x1="${l}" y1="${t + 10}" x2="${r}" y2="${t + 10}" stroke="${color}" stroke-width="2" />`;
+                svgStr += `<line x1="${l}" y1="${t + 30}" x2="${r}" y2="${t + 30}" stroke="${color}" stroke-width="2" />`;
+                svgStr += `<text x="${midX}" y="${textY}" font-size="8" font-weight="800" fill="${color}" text-anchor="middle">PT</text>`;
+                break;
+            case 'RR': // Remanente Radicular
+                svgStr += `<text x="${midX}" y="${rootOffsetY + rootH / 2 + 3}" font-size="9" font-weight="800" fill="#ef4444" text-anchor="middle">RR</text>`;
+                break;
+            case 'SI': // Semi-impactación
+                svgStr += `<text x="${midX}" y="${textY}" font-size="8" font-weight="800" fill="${color}" text-anchor="middle">SI</text>`;
+                break;
+            case 'SUP': // Supernumerario
+                const supY = isLower ? totalH - 6 : 10;
+                svgStr += `<circle cx="${midX}" cy="${supY}" r="6" stroke="${color}" stroke-width="1.2" fill="none" />`;
+                svgStr += `<text x="${midX}" y="${isLower ? totalH - 3.5 : 12.5}" font-size="7.5" font-weight="800" fill="${color}" text-anchor="middle">S</text>`;
+                break;
+            case 'TRA': // Transposición
+                const traY = isLower ? totalH - 6 : 8;
+                svgStr += `<path d="M ${midX-8} ${traY} Q ${midX} ${isLower ? traY-4 : traY+4} ${midX+8} ${traY}" stroke="${color}" stroke-width="1.2" fill="none" />`;
+                svgStr += `<path d="M ${midX-8} ${traY+2} Q ${midX} ${isLower ? traY+6 : traY-2} ${midX+8} ${traY+2}" stroke="${color}" stroke-width="1.2" fill="none" />`;
+                break;
+            case 'TP': // Tratamiento Pulpar
+                svgStr += `<line x1="${midX}" y1="${t + 20}" x2="${midX}" y2="${rootOffsetY + rootH}" stroke="${color}" stroke-width="2.2" />`;
+                svgStr += `<text x="${midX}" y="${textY}" font-size="8" font-weight="800" fill="${color}" text-anchor="middle">TP</text>`;
+                break;
+        }
+    });
 
     svgStr += `</svg>`;
     svgWrapper.innerHTML = svgStr;
@@ -1256,10 +1346,10 @@ function createToothElement(tId, patient) {
 
         // Find active surface finding (evolution overrides baseline)
         let activeSurf = null;
-        if (patient.odontogram.evolution[tId] && patient.odontogram.evolution[tId].surfaces && patient.odontogram.evolution[tId].surfaces[surfName]) {
-            activeSurf = patient.odontogram.evolution[tId].surfaces[surfName];
-        } else if (patient.odontogram.baseline[tId] && patient.odontogram.baseline[tId].surfaces && patient.odontogram.baseline[tId].surfaces[surfName]) {
-            activeSurf = patient.odontogram.baseline[tId].surfaces[surfName];
+        if (evolutionData.surfaces && evolutionData.surfaces[surfName]) {
+            activeSurf = evolutionData.surfaces[surfName];
+        } else if (baselineData.surfaces && baselineData.surfaces[surfName]) {
+            activeSurf = baselineData.surfaces[surfName];
         }
 
         if (activeSurf) {
@@ -1551,19 +1641,15 @@ function openFindingModal(tId, surface) {
 
     // Filter findings select options based on surface or whole tooth
     const typeSelect = document.getElementById('finding-type-select');
-    const surfaceGroup = typeSelect.querySelector('optgroup[label="Superficies Dentales"]');
-    const structuralGroup = typeSelect.querySelector('optgroup[label="Estructuras y Aparatos (Toda la Pieza)"]');
-    const rootGroup = typeSelect.querySelector('optgroup[label="Raíces y Pulpa"]');
-
-    if (surface) {
-        surfaceGroup.style.display = 'block';
-        structuralGroup.style.display = 'none';
-        rootGroup.style.display = 'none';
-    } else {
-        surfaceGroup.style.display = 'none';
-        structuralGroup.style.display = 'block';
-        rootGroup.style.display = 'block';
-    }
+    const groups = typeSelect.querySelectorAll('optgroup');
+    groups.forEach(g => {
+        const label = g.getAttribute('label');
+        if (surface) {
+            g.style.display = (label === 'Superficies Dentales') ? 'block' : 'none';
+        } else {
+            g.style.display = (label === 'Superficies Dentales') ? 'none' : 'block';
+        }
+    });
 
     document.getElementById('odontogram-finding-modal').classList.add('active');
 }
@@ -1592,8 +1678,14 @@ document.getElementById('odontogram-finding-form').addEventListener('submit', as
         return;
     }
 
-    if (!especificaciones) {
-        alert("Las especificaciones clínicas son obligatorias.");
+    try {
+        validateFinding({
+            toothId,
+            tipo_hallazgo,
+            especificaciones
+        }, patient.odontogram);
+    } catch (validationErr) {
+        alert(validationErr.message);
         return;
     }
 
