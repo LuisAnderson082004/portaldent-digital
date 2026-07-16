@@ -703,23 +703,48 @@
                         <select id="finding-type-select" class="form-control" required>
                             <option value="">-- Seleccione el hallazgo --</option>
                             <optgroup label="Superficies Dentales">
-                                <option value="C">Caries / Patología Activa (C)</option>
-                                <option value="O">Obturación / Curación (O)</option>
+                                <option value="C">1.3 Caries (C)</option>
+                                <option value="R">1.28 Restauración Definitiva (R)</option>
+                                <option value="RT">1.29 Restauración Temporal (RT)</option>
                                 <option value="S">Sellante Preventivo (S)</option>
                             </optgroup>
-                            <optgroup label="Estructuras y Aparatos (Toda la Pieza)">
-                                <option value="A">Ausencia / Extracción (A)</option>
-                                <option value="CC">Corona Completa (CC)</option>
-                                <option value="CF">Corona Fenestrada (CF)</option>
-                                <option value="CMC">Corona Metal Cerámica (CMC)</option>
-                                <option value="3/4">Corona Tres Cuartos (3/4)</option>
-                                <option value="CV">Corona Veneer (CV)</option>
-                                <option value="PF">Prótesis Fija (PF)</option>
-                                <option value="PR">Prótesis Removible (PR)</option>
+                            <optgroup label="Aparatos Ortodónticos">
+                                <option value="AOF">1.1 Aparato Ortodóntico Fijo (AOF)</option>
+                                <option value="AOR">1.2 Aparato Ortodóntico Removible (AOR)</option>
                             </optgroup>
-                            <optgroup label="Raíces y Pulpa">
-                                <option value="RR">Remanente Radicular (RR)</option>
-                                <option value="TP">Tratamiento Pulpar (TP)</option>
+                            <optgroup label="Estructuras y Prótesis (Toda la Pieza)">
+                                <option value="A">1.8 Diente Ausente (A)</option>
+                                <option value="CD">1.4 Corona Definitiva (CD)</option>
+                                <option value="CT">1.5 Corona Temporal (CT)</option>
+                                <option value="PF">1.24 Prótesis Fija (PF)</option>
+                                <option value="PR">1.25 Prótesis Removible (PR)</option>
+                                <option value="PT">1.26 Prótesis Total (PT)</option>
+                                <option value="EDT">1.14 Edéntulo Total (EDT)</option>
+                            </optgroup>
+                            <optgroup label="Anomalías y Posición">
+                                <option value="DES">1.6 Desgaste Oclusal/Incisal (DES)</option>
+                                <option value="DIA">1.7 Diastema (DIA)</option>
+                                <option value="DIS">1.9 Diente Discromico (DIS)</option>
+                                <option value="ECT">1.10 Diente Ectópico (ECT)</option>
+                                <option value="CLV">1.11 Diente en Clavija (CLV)</option>
+                                <option value="EXT">1.12 Diente Extruido (EXT)</option>
+                                <option value="INT">1.13 Diente Intruido (INT)</option>
+                                <option value="GEM">1.16 Geminación/Fusión (GEM)</option>
+                                <option value="GIR">1.17 Giroversión (GIR)</option>
+                                <option value="IMPAC">1.18 Impactación (IMPAC)</option>
+                                <option value="IMP">1.19 Implante (IMP)</option>
+                                <option value="MAC">1.20 Macrodoncia (MAC)</option>
+                                <option value="MIC">1.21 Microdoncia (MIC)</option>
+                                <option value="MIG">1.22 Migración (MIG)</option>
+                                <option value="MOV">1.23 Movilidad (MOV)</option>
+                                <option value="SI">1.30 Semi-impactación (SI)</option>
+                                <option value="SUP">1.31 Supernumerario (SUP)</option>
+                                <option value="TRA">1.32 Transposición (TRA)</option>
+                            </optgroup>
+                            <optgroup label="Raíces, Pulpa y Traumas">
+                                <option value="RR">1.27 Remanente Radicular (RR)</option>
+                                <option value="TP">1.33 Tratamiento Pulpar (TP)</option>
+                                <option value="FRA">1.15 Fractura (FRA)</option>
                             </optgroup>
                         </select>
                     </div>
