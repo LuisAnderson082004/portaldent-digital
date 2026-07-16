@@ -250,3 +250,50 @@ export async function deleteUser(id) {
     if (error) throw error;
     return true;
 }
+
+// --- ODONTOGRAM RECORDS METHODS ---
+export async function getOdontogramRecords(patientId) {
+    if (isTestMode()) {
+        return window.__mock_db_odontogram_records__ || [];
+    }
+    const { data, error } = await supabase
+        .from('odontogram_records')
+        .select('*')
+        .eq('patient_id', patientId)
+        .order('created_at', { ascending: true });
+    if (error) {
+        console.warn("Could not load odontogram_records, might not exist yet:", error.message);
+        return [];
+    }
+    return data;
+}
+
+export async function insertOdontogramRecord(record) {
+    if (isTestMode()) {
+        window.__mock_db_odontogram_records__ = window.__mock_db_odontogram_records__ || [];
+        const newRecord = { id: 'rec-' + Date.now(), created_at: new Date().toISOString(), ...record };
+        window.__mock_db_odontogram_records__.push(newRecord);
+        return newRecord;
+    }
+    const { data, error } = await supabase
+        .from('odontogram_records')
+        .insert([record])
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+export async function deleteOdontogramRecord(id) {
+    if (isTestMode()) {
+        window.__mock_db_odontogram_records__ = window.__mock_db_odontogram_records__ || [];
+        window.__mock_db_odontogram_records__ = window.__mock_db_odontogram_records__.filter(r => r.id !== id);
+        return true;
+    }
+    const { error } = await supabase
+        .from('odontogram_records')
+        .delete()
+        .eq('id', id);
+    if (error) throw error;
+    return true;
+}
