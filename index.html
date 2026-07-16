@@ -281,33 +281,33 @@
 
                             <!-- Interactive Dental Canvas -->
                             <div class="odontogram-canvas">
-                                <!-- ADULT ARCH ROW (Upper: 1-16) -->
+                                <!-- ADULT ARCH ROW (Upper: 18 - 28 FDI) -->
                                 <div class="teeth-row-group">
-                                    <span class="row-label">Arcada Superior Adulto (1 - 16)</span>
+                                    <span class="row-label">Arcada Superior Adulto (18 - 28 FDI)</span>
                                     <div class="teeth-row" id="odontogram-adult-upper">
                                         <!-- Rendered dynamically -->
                                     </div>
                                 </div>
 
-                                <!-- CHILD ARCH ROW (Upper: 51-55, 61-65 FDI / A-J) -->
+                                <!-- CHILD ARCH ROW (Upper: 55 - 65 FDI) -->
                                 <div class="teeth-row-group child-row">
-                                    <span class="row-label">Arcada Superior Infantil (A - J)</span>
+                                    <span class="row-label">Arcada Superior Infantil (55 - 65 FDI)</span>
                                     <div class="teeth-row" id="odontogram-child-upper">
                                         <!-- Rendered dynamically -->
                                     </div>
                                 </div>
 
-                                <!-- CHILD ARCH ROW (Lower: K - T) -->
+                                <!-- CHILD ARCH ROW (Lower: 85 - 75 FDI) -->
                                 <div class="teeth-row-group child-row">
-                                    <span class="row-label">Arcada Inferior Infantil (K - T)</span>
+                                    <span class="row-label">Arcada Inferior Infantil (85 - 75 FDI)</span>
                                     <div class="teeth-row" id="odontogram-child-lower">
                                         <!-- Rendered dynamically -->
                                     </div>
                                 </div>
 
-                                <!-- ADULT ARCH ROW (Lower: 17-32) -->
+                                <!-- ADULT ARCH ROW (Lower: 48 - 38 FDI) -->
                                 <div class="teeth-row-group">
-                                    <span class="row-label">Arcada Inferior Adulto (17 - 32)</span>
+                                    <span class="row-label">Arcada Inferior Adulto (48 - 38 FDI)</span>
                                     <div class="teeth-row" id="odontogram-adult-lower">
                                         <!-- Rendered dynamically -->
                                     </div>
@@ -321,28 +321,9 @@
                                     <span id="baseline-saved-indicator" class="text-success hidden"><i class="fa-solid fa-circle-check"></i> Estado Inicial Legal Congelado</span>
                                 </div>
                                 <div id="evolution-actions" class="hidden">
-                                    <div class="treatment-selection-panel">
-                                        <h4>Registrar Procedimiento Evolutivo</h4>
-                                        <div class="selection-row">
-                                            <div class="form-group select-inline">
-                                                <label for="treatment-tooth-select">Pieza/Superficie Seleccionada:</label>
-                                                <input type="text" id="treatment-tooth-select" readonly placeholder="Haga clic en un diente/superficie" class="form-control">
-                                            </div>
-                                            <div class="form-group select-inline">
-                                                <label for="treatment-type-select">Tratamiento:</label>
-                                                <select id="treatment-type-select" class="form-control">
-                                                    <option value="curation">Curación (Obturación)</option>
-                                                    <option value="sealant">Sellante</option>
-                                                    <option value="extraction">Extracción (Pieza Ausente)</option>
-                                                    <option value="pathology">Caries / Patología Activa</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="form-group mt-2">
-                                            <label for="treatment-note-input">Nota del Procedimiento (Requerido):</label>
-                                            <input type="text" id="treatment-note-input" placeholder="Ej. Restauración resina compuesta superficie oclusal" class="form-control" required>
-                                        </div>
-                                        <button class="btn btn-success mt-2" onclick="applyTreatmentToTooth()"><i class="fa-solid fa-plus"></i> Aplicar Tratamiento</button>
+                                    <div class="alert alert-info py-3" style="font-weight: 600; display: flex; align-items: center; gap: 10px;">
+                                        <i class="fa-solid fa-circle-info" style="font-size: 1.25rem;"></i>
+                                        <span>Modo Evolución Activo: Seleccione un diente o superficie en el odontograma para registrar notas, diagnósticos o procedimientos clínicos.</span>
                                     </div>
                                 </div>
                             </div>
@@ -691,6 +672,76 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline" onclick="closeShiftModal()">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Registrar Turno</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Odontogram Finding Modal -->
+    <div id="odontogram-finding-modal" class="modal">
+        <div class="modal-content modal-md">
+            <div class="modal-header">
+                <h3 id="finding-modal-title">Registrar Hallazgo Clínico - COP</h3>
+                <span class="close-btn" onclick="closeFindingModal()">&times;</span>
+            </div>
+            <form id="odontogram-finding-form">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="finding-tooth-display">Pieza Dental</label>
+                            <input type="text" id="finding-tooth-display" class="form-control" readonly>
+                            <input type="hidden" id="finding-tooth-id">
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="finding-surface-display">Superficie / Zona</label>
+                            <input type="text" id="finding-surface-display" class="form-control" readonly>
+                            <input type="hidden" id="finding-surface-name">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="finding-type-select">Tipo de Hallazgo (Norma COP) *</label>
+                        <select id="finding-type-select" class="form-control" required>
+                            <option value="">-- Seleccione el hallazgo --</option>
+                            <optgroup label="Superficies Dentales">
+                                <option value="C">Caries / Patología Activa (C)</option>
+                                <option value="O">Obturación / Curación (O)</option>
+                                <option value="S">Sellante Preventivo (S)</option>
+                            </optgroup>
+                            <optgroup label="Estructuras y Aparatos (Toda la Pieza)">
+                                <option value="A">Ausencia / Extracción (A)</option>
+                                <option value="CC">Corona Completa (CC)</option>
+                                <option value="CF">Corona Fenestrada (CF)</option>
+                                <option value="CMC">Corona Metal Cerámica (CMC)</option>
+                                <option value="3/4">Corona Tres Cuartos (3/4)</option>
+                                <option value="CV">Corona Veneer (CV)</option>
+                                <option value="PF">Prótesis Fija (PF)</option>
+                                <option value="PR">Prótesis Removible (PR)</option>
+                            </optgroup>
+                            <optgroup label="Raíces y Pulpa">
+                                <option value="RR">Remanente Radicular (RR)</option>
+                                <option value="TP">Tratamiento Pulpar (TP)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="finding-state-select">Estado del Hallazgo *</label>
+                        <select id="finding-state-select" class="form-control" required>
+                            <option value="true">Buen estado / Tratamiento Existente (Color Azul)</option>
+                            <option value="false">Mal estado / Requerido / Patología Activa (Color Rojo)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="finding-specifications">Especificaciones Clínicas (Obligatorio) *</label>
+                        <textarea id="finding-specifications" class="form-control" rows="3" placeholder="Detalle el estado clínico de la pieza, materiales o justificación diagnóstica..." required></textarea>
+                    </div>
+                    <div class="alert alert-info py-2" style="font-size: 0.8rem; display: flex; align-items: center; gap: 8px; font-weight: 600;">
+                        <i class="fa-solid fa-signature"></i>
+                        <span>Este registro se firmará digitalmente a nombre del profesional logueado para fines de trazabilidad legal.</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeFindingModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-signature"></i> Firmar y Guardar</button>
                 </div>
             </form>
         </div>
