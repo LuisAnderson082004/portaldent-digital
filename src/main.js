@@ -14,7 +14,15 @@ import {
     updatePatient as updatePatientInDB,
     getOdontogramRecords,
     insertOdontogramRecord,
-    deleteOdontogramRecord
+    deleteOdontogramRecord,
+    getTreatmentsCatalog,
+    insertTreatmentInCatalog,
+    updateTreatmentInCatalog,
+    deleteTreatmentFromCatalog,
+    getPatientTreatmentPlans,
+    insertPatientTreatmentPlan,
+    updatePatientTreatmentPlan,
+    deletePatientTreatmentPlan
 } from './utils/storage.js';
 import { hashPassword, verifyUser, getRoleNameSpanish, checkSession, logout } from './auth/authEngine.js';
 import { isWithinFourHours, saveAppointment, cancelAppointment } from './modules/appointments.js';
@@ -29,6 +37,8 @@ let appState = {
     patients: [],
     appointments: [],
     shifts: [],
+    treatmentsCatalog: [],
+    patientTreatmentPlans: [],
     systemTime: new Date("2026-07-03T15:46:33-05:00") // Simulated clock baseline
 };
 
@@ -110,6 +120,16 @@ function switchView(viewId) {
             viewTitle.innerText = "Turnos Médicos";
             viewSubtitle.innerText = "Configuración de horarios laborales semanales para el personal de odontología.";
             renderShiftsList();
+            break;
+        case 'treatment-plan':
+            viewTitle.innerText = "Planes de Tratamiento";
+            viewSubtitle.innerText = "Presupuestos operativos y control de procedimientos clínicos planificados.";
+            initializeTreatmentPlanView();
+            break;
+        case 'tarifario':
+            viewTitle.innerText = "Tarifario y Catálogo Clínico";
+            viewSubtitle.innerText = "Gestión de tarifas oficiales y catálogo de procedimientos odontológicos.";
+            renderTarifarioList();
             break;
     }
 }
@@ -1119,10 +1139,21 @@ document.getElementById('add-evolution-note-form').addEventListener('submit', as
 // INTERACTIVE ODONTOGRAM RENDER
 // -------------------------------------------------------------
 function drawOdontogramTeethLayout(patient) {
-    const adultUpper = document.getElementById('odontogram-adult-upper');
-    const childUpper = document.getElementById('odontogram-child-upper');
-    const childLower = document.getElementById('odontogram-child-lower');
-    const adultLower = document.getElementById('odontogram-adult-lower');
+    drawOdontogramTeethLayoutForContainer(patient, {
+        adultUpper: 'odontogram-adult-upper',
+        childUpper: 'odontogram-child-upper',
+        childLower: 'odontogram-child-lower',
+        adultLower: 'odontogram-adult-lower'
+    });
+}
+
+function drawOdontogramTeethLayoutForContainer(patient, containerIds) {
+    const adultUpper = document.getElementById(containerIds.adultUpper);
+    const childUpper = document.getElementById(containerIds.childUpper);
+    const childLower = document.getElementById(containerIds.childLower);
+    const adultLower = document.getElementById(containerIds.adultLower);
+
+    if (!adultUpper || !childUpper || !childLower || !adultLower) return;
 
     adultUpper.innerHTML = '';
     childUpper.innerHTML = '';
@@ -1809,6 +1840,11 @@ window.deleteShift = deleteShift;
 window.selectSurfaceClick = selectSurfaceClick;
 window.editPatient = editPatient;
 window.togglePatientStatus = togglePatientStatus;
+window.openTarifarioModal = openTarifarioModal;
+window.closeTarifarioModal = closeTarifarioModal;
+window.deleteTarifarioCatalogItem = deleteTarifarioCatalogItem;
+window.toggleTreatmentPlanStatus = toggleTreatmentPlanStatus;
+window.deleteTreatmentPlanItem = deleteTreatmentPlanItem;
 
 // Application Initialization Bootstrap
 async function bootstrap() {
@@ -1818,6 +1854,7 @@ async function bootstrap() {
         appState.patients = await getPatients();
         appState.shifts = await getShifts();
         appState.appointments = await getAppointments();
+        appState.treatmentsCatalog = await getTreatmentsCatalog();
     } catch (err) {
         console.error("Error loading application state from database:", err.message);
     }
@@ -1937,6 +1974,270 @@ function setupPatientSearch() {
             searchInput.dispatchEvent(new Event('input'));
         }
     });
+}
+
+// ============================================================================
+// CLINICAL TARIFARIO CRUD FUNCTIONS
+// ============================================================================
+async function renderTarifarioList() {
+    const tbody = document.getElementById('tarifario-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    try {
+        appState.treatmentsCatalog = await getTreatmentsCatalog();
+    } catch (err) {
+        console.error("Error fetching treatments catalog:", err.message);
+    }
+
+    appState.treatmentsCatalog.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><span class="badge badge-info">${item.categoria}</span></td>
+            <td><strong>${item.nombre}</strong></td>
+            <td>S/ ${parseFloat(item.precio_soles).toFixed(2)}</td>
+            <td>$ ${parseFloat(item.precio_dolares).toFixed(2)}</td>
+            <td>
+                <button class="btn btn-outline btn-sm mr-1" onclick="openTarifarioModal('${item.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
+                <button class="btn btn-danger-outline btn-sm" onclick="deleteTarifarioCatalogItem('${item.id}')"><i class="fa-solid fa-trash"></i> Eliminar</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function openTarifarioModal(itemId = '') {
+    const modal = document.getElementById('tarifario-modal');
+    const form = document.getElementById('tarifario-form');
+    form.reset();
+    
+    if (itemId) {
+        document.getElementById('tarifario-modal-title').innerText = "Editar Procedimiento";
+        const item = appState.treatmentsCatalog.find(t => t.id === itemId);
+        if (item) {
+            document.getElementById('tarifario-item-id').value = item.id;
+            document.getElementById('tarifario-nombre').value = item.nombre;
+            document.getElementById('tarifario-categoria').value = item.categoria;
+            document.getElementById('tarifario-precio-soles').value = item.precio_soles;
+            document.getElementById('tarifario-precio-dolares').value = item.precio_dolares;
+        }
+    } else {
+        document.getElementById('tarifario-modal-title').innerText = "Nuevo Procedimiento";
+        document.getElementById('tarifario-item-id').value = '';
+    }
+    
+    modal.classList.add('active');
+}
+
+function closeTarifarioModal() {
+    document.getElementById('tarifario-modal').classList.remove('active');
+}
+
+document.getElementById('tarifario-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('tarifario-item-id').value;
+    const nombre = document.getElementById('tarifario-nombre').value.trim();
+    const categoria = document.getElementById('tarifario-categoria').value;
+    const precio_soles = parseFloat(document.getElementById('tarifario-precio-soles').value);
+    const precio_dolares = parseFloat(document.getElementById('tarifario-precio-dolares').value);
+
+    const itemData = { nombre, categoria, precio_soles, precio_dolares };
+
+    try {
+        if (id) {
+            await updateTreatmentInCatalog(id, itemData);
+        } else {
+            await insertTreatmentInCatalog(itemData);
+        }
+        closeTarifarioModal();
+        await renderTarifarioList();
+    } catch (err) {
+        alert("Error al guardar en catálogo: " + err.message);
+    }
+});
+
+async function deleteTarifarioCatalogItem(id) {
+    if (confirm("¿Está seguro que desea eliminar este procedimiento del catálogo?")) {
+        try {
+            await deleteTreatmentFromCatalog(id);
+            await renderTarifarioList();
+        } catch (err) {
+            alert("Error al eliminar del catálogo: " + err.message);
+        }
+    }
+}
+
+// ============================================================================
+// PATIENT TREATMENT PLAN CRUD & WORKFLOW
+// ============================================================================
+async function initializeTreatmentPlanView() {
+    const patientId = document.getElementById('ehr-patient-select').value;
+    const patientNameLabel = document.getElementById('treatment-plan-patient-name');
+    
+    const treatmentSelect = document.getElementById('plan-treatment-select');
+    const toothSelect = document.getElementById('plan-tooth-select');
+
+    if (!patientId) {
+        patientNameLabel.innerText = "Ningún paciente seleccionado";
+        document.getElementById('treatment-plan-table-body').innerHTML = '<tr><td colspan="6" class="text-center text-muted">Seleccione un paciente en la ficha clínica primero.</td></tr>';
+        return;
+    }
+
+    const patient = appState.patients.find(p => p.id === patientId);
+    if (patient) {
+        patientNameLabel.innerText = `${patient.firstname} ${patient.lastname} (DNI: ${patient.dni})`;
+    }
+
+    // Populate Treatments select dropdown
+    try {
+        appState.treatmentsCatalog = await getTreatmentsCatalog();
+    } catch (err) {
+        console.error("Error fetching treatments catalog:", err.message);
+    }
+
+    treatmentSelect.innerHTML = '<option value="">-- Seleccione un tratamiento --</option>';
+    appState.treatmentsCatalog.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.innerText = `${item.nombre} (S/ ${parseFloat(item.precio_soles).toFixed(2)} | $ ${parseFloat(item.precio_dolares).toFixed(2)})`;
+        treatmentSelect.appendChild(opt);
+    });
+
+    // Populate Tooth select dropdown
+    toothSelect.innerHTML = '<option value="">-- General (Toda la boca) --</option>';
+    const allTeeth = [
+        ...adultUpperTeeth, ...childUpperTeeth, ...childLowerTeeth, ...adultLowerTeeth
+    ].sort((a,b) => a-b);
+    allTeeth.forEach(tId => {
+        const opt = document.createElement('option');
+        opt.value = tId;
+        opt.innerText = `Pieza FDI ${tId}`;
+        toothSelect.appendChild(opt);
+    });
+
+    // Render read-only odontogram reference
+    drawOdontogramTeethLayoutForContainer(patient, {
+        adultUpper: 'odontogram-treatment-plan-adult-upper',
+        childUpper: 'odontogram-treatment-plan-child-upper',
+        childLower: 'odontogram-treatment-plan-child-lower',
+        adultLower: 'odontogram-treatment-plan-adult-lower'
+    });
+
+    // Load and render patient treatment plan items
+    await loadPatientTreatmentPlans(patientId);
+}
+
+async function loadPatientTreatmentPlans(patientId) {
+    const tbody = document.getElementById('treatment-plan-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    try {
+        appState.patientTreatmentPlans = await getPatientTreatmentPlans(patientId);
+    } catch (err) {
+        console.error("Error loading patient treatment plans:", err.message);
+    }
+
+    let solesPending = 0;
+    let solesDone = 0;
+    let dollarsPending = 0;
+    let dollarsDone = 0;
+
+    appState.patientTreatmentPlans.forEach(item => {
+        const soles = parseFloat(item.precio_soles_aplicado);
+        const dollars = parseFloat(item.precio_dolares_aplicado);
+
+        if (item.estado === 'realizado') {
+            solesDone += soles;
+            dollarsDone += dollars;
+        } else {
+            solesPending += soles;
+            dollarsPending += dollars;
+        }
+
+        const toothLabel = item.tooth_id ? `Pieza ${item.tooth_id}` : 'General';
+        const isDone = item.estado === 'realizado';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${item.treatments_catalog?.nombre || 'Procedimiento'}</strong></td>
+            <td>${toothLabel}</td>
+            <td>S/ ${soles.toFixed(2)}</td>
+            <td>$ ${dollars.toFixed(2)}</td>
+            <td>
+                <span class="badge ${isDone ? 'badge-success' : 'badge-warning'}">
+                    ${isDone ? '<i class="fa-solid fa-circle-check"></i> Realizado' : 'Pendiente'}
+                </span>
+            </td>
+            <td>
+                <button type="button" class="btn btn-sm ${isDone ? 'btn-outline' : 'btn-success'} mr-1" onclick="toggleTreatmentPlanStatus('${item.id}', '${item.estado}')">
+                    ${isDone ? 'Pendiente' : 'Completar'}
+                </button>
+                <button type="button" class="btn btn-danger-outline btn-sm" onclick="deleteTreatmentPlanItem('${item.id}')"><i class="fa-solid fa-trash"></i></button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Update summaries
+    document.getElementById('plan-total-soles-pending').innerText = `S/ ${solesPending.toFixed(2)}`;
+    document.getElementById('plan-total-soles-done').innerText = `S/ ${solesDone.toFixed(2)}`;
+    document.getElementById('plan-total-dollars-pending').innerText = `$ ${dollarsPending.toFixed(2)}`;
+    document.getElementById('plan-total-dollars-done').innerText = `$ ${dollarsDone.toFixed(2)}`;
+}
+
+document.getElementById('add-treatment-plan-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const patientId = document.getElementById('ehr-patient-select').value;
+    if (!patientId) return;
+
+    const treatmentId = document.getElementById('plan-treatment-select').value;
+    const tooth_id = document.getElementById('plan-tooth-select').value ? parseInt(document.getElementById('plan-tooth-select').value) : null;
+
+    const treatment = appState.treatmentsCatalog.find(t => t.id === treatmentId);
+    if (!treatment) return;
+
+    const record = {
+        patient_id: patientId,
+        treatment_id: treatmentId,
+        tooth_id,
+        estado: 'pendiente',
+        precio_soles_aplicado: treatment.precio_soles,   // Historical price preserved
+        precio_dolares_aplicado: treatment.precio_dolares // Historical price preserved
+    };
+
+    try {
+        await insertPatientTreatmentPlan(record);
+        document.getElementById('add-treatment-plan-form').reset();
+        await loadPatientTreatmentPlans(patientId);
+    } catch (err) {
+        alert("Error al agregar al plan: " + err.message);
+    }
+});
+
+async function toggleTreatmentPlanStatus(planId, currentStatus) {
+    const nextStatus = currentStatus === 'realizado' ? 'pendiente' : 'realizado';
+    const executionDate = nextStatus === 'realizado' ? appState.systemTime.toISOString() : null;
+
+    try {
+        await updatePatientTreatmentPlan(planId, { estado: nextStatus, fecha_ejecucion: executionDate });
+        const patientId = document.getElementById('ehr-patient-select').value;
+        await loadPatientTreatmentPlans(patientId);
+    } catch (err) {
+        alert("Error al cambiar estado: " + err.message);
+    }
+}
+
+async function deleteTreatmentPlanItem(planId) {
+    if (confirm("¿Está seguro que desea eliminar este procedimiento del plan de tratamiento?")) {
+        try {
+            await deletePatientTreatmentPlan(planId);
+            const patientId = document.getElementById('ehr-patient-select').value;
+            await loadPatientTreatmentPlans(patientId);
+        } catch (err) {
+            alert("Error al eliminar del plan: " + err.message);
+        }
+    }
 }
 
 // Trigger bootstrap
