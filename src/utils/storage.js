@@ -2,16 +2,8 @@
 
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from './supabaseClient.js';
 
-// Helper for unit testing isolation (test.html)
-function isTestMode() {
-    return typeof window !== 'undefined' && window.__portaldent_test_mode__;
-}
-
 // --- PATIENTS CLIENT METHODS ---
 export async function getPatients() {
-    if (isTestMode()) {
-        return window.__mock_db_patients__ || [];
-    }
     const { data, error } = await supabase
         .from('patients')
         .select('*')
@@ -21,11 +13,6 @@ export async function getPatients() {
 }
 
 export async function insertPatient(patient) {
-    if (isTestMode()) {
-        window.__mock_db_patients__ = window.__mock_db_patients__ || [];
-        window.__mock_db_patients__.push(patient);
-        return patient;
-    }
     const { data, error } = await supabase
         .from('patients')
         .insert([patient])
@@ -36,15 +23,6 @@ export async function insertPatient(patient) {
 }
 
 export async function updatePatient(id, patientData) {
-    if (isTestMode()) {
-        window.__mock_db_patients__ = window.__mock_db_patients__ || [];
-        const idx = window.__mock_db_patients__.findIndex(p => p.id === id);
-        if (idx > -1) {
-            window.__mock_db_patients__[idx] = { ...window.__mock_db_patients__[idx], ...patientData };
-            return window.__mock_db_patients__[idx];
-        }
-        throw new Error("Paciente no encontrado.");
-    }
     const { data, error } = await supabase
         .from('patients')
         .update(patientData)
@@ -57,9 +35,6 @@ export async function updatePatient(id, patientData) {
 
 // --- APPOINTMENTS CLIENT METHODS ---
 export async function getAppointments() {
-    if (isTestMode()) {
-        return window.__mock_db_appointments__ || [];
-    }
     const { data, error } = await supabase
         .from('appointments')
         .select('*');
@@ -68,11 +43,6 @@ export async function getAppointments() {
 }
 
 export async function insertAppointment(appt) {
-    if (isTestMode()) {
-        window.__mock_db_appointments__ = window.__mock_db_appointments__ || [];
-        window.__mock_db_appointments__.push(appt);
-        return appt;
-    }
     const { data, error } = await supabase
         .from('appointments')
         .insert([appt])
@@ -83,15 +53,6 @@ export async function insertAppointment(appt) {
 }
 
 export async function updateAppointment(id, apptData) {
-    if (isTestMode()) {
-        window.__mock_db_appointments__ = window.__mock_db_appointments__ || [];
-        const idx = window.__mock_db_appointments__.findIndex(a => a.id === id);
-        if (idx > -1) {
-            window.__mock_db_appointments__[idx] = { ...window.__mock_db_appointments__[idx], ...apptData };
-            return window.__mock_db_appointments__[idx];
-        }
-        throw new Error("Cita no encontrada.");
-    }
     const { data, error } = await supabase
         .from('appointments')
         .update(apptData)
@@ -103,11 +64,6 @@ export async function updateAppointment(id, apptData) {
 }
 
 export async function deleteAppointment(id) {
-    if (isTestMode()) {
-        window.__mock_db_appointments__ = window.__mock_db_appointments__ || [];
-        window.__mock_db_appointments__ = window.__mock_db_appointments__.filter(a => a.id !== id);
-        return true;
-    }
     const { error } = await supabase
         .from('appointments')
         .delete()
@@ -118,9 +74,6 @@ export async function deleteAppointment(id) {
 
 // --- SHIFTS CLIENT METHODS ---
 export async function getShifts() {
-    if (isTestMode()) {
-        return window.__mock_db_shifts__ || [];
-    }
     const { data, error } = await supabase
         .from('shifts')
         .select('*');
@@ -129,11 +82,6 @@ export async function getShifts() {
 }
 
 export async function insertShift(shift) {
-    if (isTestMode()) {
-        window.__mock_db_shifts__ = window.__mock_db_shifts__ || [];
-        window.__mock_db_shifts__.push(shift);
-        return shift;
-    }
     const { data, error } = await supabase
         .from('shifts')
         .insert([shift])
@@ -144,11 +92,6 @@ export async function insertShift(shift) {
 }
 
 export async function deleteShift(id) {
-    if (isTestMode()) {
-        window.__mock_db_shifts__ = window.__mock_db_shifts__ || [];
-        window.__mock_db_shifts__ = window.__mock_db_shifts__.filter(s => s.id !== id);
-        return true;
-    }
     const { error } = await supabase
         .from('shifts')
         .delete()
@@ -157,12 +100,8 @@ export async function deleteShift(id) {
     return true;
 }
 
-
 // --- USERS / PROFILES CLIENT METHODS ---
 export async function getUsers() {
-    if (isTestMode()) {
-        return window.__mock_db_users__ || [];
-    }
     const { data, error } = await supabase
         .from('profiles')
         .select('*');
@@ -171,11 +110,6 @@ export async function getUsers() {
 }
 
 export async function insertUser(user) {
-    if (isTestMode()) {
-        window.__mock_db_users__ = window.__mock_db_users__ || [];
-        window.__mock_db_users__.push(user);
-        return user;
-    }
     // Create a temporary Supabase client with persistSession: false to avoid logging out the current admin
     const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
     const tempSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -207,16 +141,6 @@ export async function insertUser(user) {
 }
 
 export async function updateUser(id, userData) {
-    if (isTestMode()) {
-        window.__mock_db_users__ = window.__mock_db_users__ || [];
-        const idx = window.__mock_db_users__.findIndex(u => u.id === id);
-        if (idx > -1) {
-            window.__mock_db_users__[idx] = { ...window.__mock_db_users__[idx], ...userData };
-            return window.__mock_db_users__[idx];
-        }
-        throw new Error("Usuario no encontrado.");
-    }
-    
     // If updating own password
     if (userData.password) {
         const { error: authError } = await supabase.auth.updateUser({ password: userData.password });
@@ -237,25 +161,8 @@ export async function updateUser(id, userData) {
     return data;
 }
 
-export async function deleteUser(id) {
-    if (isTestMode()) {
-        window.__mock_db_users__ = window.__mock_db_users__ || [];
-        window.__mock_db_users__ = window.__mock_db_users__.filter(u => u.id !== id);
-        return true;
-    }
-    const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', id);
-    if (error) throw error;
-    return true;
-}
-
 // --- ODONTOGRAM RECORDS METHODS ---
 export async function getOdontogramRecords(patientId) {
-    if (isTestMode()) {
-        return window.__mock_db_odontogram_records__ || [];
-    }
     const { data, error } = await supabase
         .from('odontogram_records')
         .select('*')
@@ -269,12 +176,6 @@ export async function getOdontogramRecords(patientId) {
 }
 
 export async function insertOdontogramRecord(record) {
-    if (isTestMode()) {
-        window.__mock_db_odontogram_records__ = window.__mock_db_odontogram_records__ || [];
-        const newRecord = { id: 'rec-' + Date.now(), created_at: new Date().toISOString(), ...record };
-        window.__mock_db_odontogram_records__.push(newRecord);
-        return newRecord;
-    }
     const { data, error } = await supabase
         .from('odontogram_records')
         .insert([record])
@@ -285,11 +186,6 @@ export async function insertOdontogramRecord(record) {
 }
 
 export async function deleteOdontogramRecord(id) {
-    if (isTestMode()) {
-        window.__mock_db_odontogram_records__ = window.__mock_db_odontogram_records__ || [];
-        window.__mock_db_odontogram_records__ = window.__mock_db_odontogram_records__.filter(r => r.id !== id);
-        return true;
-    }
     const { error } = await supabase
         .from('odontogram_records')
         .delete()
@@ -300,16 +196,6 @@ export async function deleteOdontogramRecord(id) {
 
 // --- TREATMENTS CATALOG METHODS ---
 export async function getTreatmentsCatalog() {
-    if (isTestMode()) {
-        if (!window.__mock_db_treatments_catalog__) {
-            window.__mock_db_treatments_catalog__ = [
-                { id: 'cat-1', nombre: 'Profilaxis Dental Simple', precio_soles: 80.00, precio_dolares: 22.00, categoria: 'Preventiva' },
-                { id: 'cat-2', nombre: 'Curación Resina Compuesta Simple', precio_soles: 120.00, precio_dolares: 32.50, categoria: 'Restauradora' },
-                { id: 'cat-3', nombre: 'Extracción Dental Simple', precio_soles: 100.00, precio_dolares: 27.00, categoria: 'Cirugía' }
-            ];
-        }
-        return window.__mock_db_treatments_catalog__;
-    }
     const { data, error } = await supabase
         .from('treatments_catalog')
         .select('*')
@@ -319,12 +205,6 @@ export async function getTreatmentsCatalog() {
 }
 
 export async function insertTreatmentInCatalog(treatment) {
-    if (isTestMode()) {
-        window.__mock_db_treatments_catalog__ = window.__mock_db_treatments_catalog__ || [];
-        const newTreatment = { id: 'cat-' + Date.now(), ...treatment };
-        window.__mock_db_treatments_catalog__.push(newTreatment);
-        return newTreatment;
-    }
     const { data, error } = await supabase
         .from('treatments_catalog')
         .insert([treatment])
@@ -335,15 +215,6 @@ export async function insertTreatmentInCatalog(treatment) {
 }
 
 export async function updateTreatmentInCatalog(id, data) {
-    if (isTestMode()) {
-        window.__mock_db_treatments_catalog__ = window.__mock_db_treatments_catalog__ || [];
-        const idx = window.__mock_db_treatments_catalog__.findIndex(t => t.id === id);
-        if (idx !== -1) {
-            window.__mock_db_treatments_catalog__[idx] = { ...window.__mock_db_treatments_catalog__[idx], ...data };
-            return window.__mock_db_treatments_catalog__[idx];
-        }
-        return null;
-    }
     const { data: updated, error } = await supabase
         .from('treatments_catalog')
         .update(data)
@@ -355,11 +226,6 @@ export async function updateTreatmentInCatalog(id, data) {
 }
 
 export async function deleteTreatmentFromCatalog(id) {
-    if (isTestMode()) {
-        window.__mock_db_treatments_catalog__ = window.__mock_db_treatments_catalog__ || [];
-        window.__mock_db_treatments_catalog__ = window.__mock_db_treatments_catalog__.filter(t => t.id !== id);
-        return true;
-    }
     const { error } = await supabase
         .from('treatments_catalog')
         .delete()
@@ -370,10 +236,6 @@ export async function deleteTreatmentFromCatalog(id) {
 
 // --- PATIENT TREATMENT PLAN METHODS ---
 export async function getPatientTreatmentPlans(patientId) {
-    if (isTestMode()) {
-        window.__mock_db_patient_treatment_plan__ = window.__mock_db_patient_treatment_plan__ || [];
-        return window.__mock_db_patient_treatment_plan__.filter(p => p.patient_id === patientId);
-    }
     const { data, error } = await supabase
         .from('patient_treatment_plan')
         .select(`
@@ -387,19 +249,6 @@ export async function getPatientTreatmentPlans(patientId) {
 }
 
 export async function insertPatientTreatmentPlan(record) {
-    if (isTestMode()) {
-        window.__mock_db_patient_treatment_plan__ = window.__mock_db_patient_treatment_plan__ || [];
-        const catalog = window.__mock_db_treatments_catalog__ || [];
-        const catItem = catalog.find(c => c.id === record.treatment_id) || {};
-        const newRecord = {
-            id: 'plan-' + Date.now(),
-            created_at: new Date().toISOString(),
-            ...record,
-            treatments_catalog: catItem
-        };
-        window.__mock_db_patient_treatment_plan__.push(newRecord);
-        return newRecord;
-    }
     const { data, error } = await supabase
         .from('patient_treatment_plan')
         .insert([record])
@@ -413,15 +262,6 @@ export async function insertPatientTreatmentPlan(record) {
 }
 
 export async function updatePatientTreatmentPlan(id, data) {
-    if (isTestMode()) {
-        window.__mock_db_patient_treatment_plan__ = window.__mock_db_patient_treatment_plan__ || [];
-        const idx = window.__mock_db_patient_treatment_plan__.findIndex(p => p.id === id);
-        if (idx !== -1) {
-            window.__mock_db_patient_treatment_plan__[idx] = { ...window.__mock_db_patient_treatment_plan__[idx], ...data };
-            return window.__mock_db_patient_treatment_plan__[idx];
-        }
-        return null;
-    }
     const { data: updated, error } = await supabase
         .from('patient_treatment_plan')
         .update(data)
@@ -436,11 +276,6 @@ export async function updatePatientTreatmentPlan(id, data) {
 }
 
 export async function deletePatientTreatmentPlan(id) {
-    if (isTestMode()) {
-        window.__mock_db_patient_treatment_plan__ = window.__mock_db_patient_treatment_plan__ || [];
-        window.__mock_db_patient_treatment_plan__ = window.__mock_db_patient_treatment_plan__.filter(p => p.id !== id);
-        return true;
-    }
     const { error } = await supabase
         .from('patient_treatment_plan')
         .delete()
