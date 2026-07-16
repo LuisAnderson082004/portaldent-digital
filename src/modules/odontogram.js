@@ -126,9 +126,16 @@ class OdontogramControllerClass {
 
 export const OdontogramController = new OdontogramControllerClass();
 
-/**
- * Debounce helper to prevent excessive rendering during quick clinical sequences.
- */
+export function saveBaselineState(patient) {
+    if (patient.odontogram && patient.odontogram.baselineFrozen) {
+        throw new Error("El estado inicial de admisión ya se encuentra congelado.");
+    }
+    if (!patient.odontogram) {
+        patient.odontogram = {};
+    }
+    patient.odontogram.baselineFrozen = true;
+}
+
 export function debounce(func, wait = 300) {
     let timeout;
     return function (...args) {
