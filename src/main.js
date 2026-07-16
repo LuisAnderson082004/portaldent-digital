@@ -654,7 +654,8 @@ function loadCalendar() {
     }
     const selectedDate = dateSel.value;
     
-    const dateObj = new Date(selectedDate + "T12:00:00");
+    const parts = selectedDate.split('-');
+    const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     document.getElementById('calendar-grid-header-day').innerText = dateObj.toLocaleDateString('es-PE', options);
 
@@ -730,7 +731,9 @@ function loadCalendar() {
 
 function changeCalendarDay(days) {
     const dateSel = document.getElementById('calendar-date-selector');
-    const currentDate = new Date(dateSel.value + "T12:00:00");
+    if (!dateSel.value) return;
+    const parts = dateSel.value.split('-');
+    const currentDate = new Date(parts[0], parts[1] - 1, parts[2]);
     currentDate.setDate(currentDate.getDate() + days);
     
     const pad = (n) => String(n).padStart(2, '0');
