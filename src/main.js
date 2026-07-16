@@ -1635,34 +1635,9 @@ function getSurfaceNameSpanish(surf) {
 }
 
 function setOdontogramMode(mode) {
-    currentOdontogramMode = mode;
-    
-    document.getElementById('btn-odontogram-mode-baseline').classList.remove('active');
-    document.getElementById('btn-odontogram-mode-evolution').classList.remove('active');
-    
-    document.getElementById('baseline-actions').classList.add('hidden');
-    document.getElementById('evolution-actions').classList.add('hidden');
-
-    const helpText = document.getElementById('odontogram-help-text');
-
-    if (mode === 'baseline') {
-        document.getElementById('btn-odontogram-mode-baseline').classList.add('active');
-        document.getElementById('baseline-actions').classList.remove('hidden');
-        helpText.innerText = "Modo Inicial (Baseline): Configure el estado de ingreso del paciente. Al guardar, este registro se congelará y firmará legalmente.";
-    } else {
-        document.getElementById('btn-odontogram-mode-evolution').classList.add('active');
-        document.getElementById('evolution-actions').classList.remove('hidden');
-        helpText.innerText = "Modo Evolución: Haga clic en piezas o superficies dentales para registrar evoluciones, curaciones o tratamientos.";
-    }
-
+    currentOdontogramMode = 'baseline';
     selectedToothId = null;
     selectedSurfaceName = null;
-    
-    const patientId = document.getElementById('ehr-patient-select').value;
-    if (patientId) {
-        const patient = appState.patients.find(p => p.id === patientId);
-        updateOdontogramControls(patient);
-    }
 }
 
 function updateOdontogramControls(patient) {
@@ -2077,41 +2052,27 @@ function getToothFindingsSummary(toothId, patient) {
     const baselineData = patient.odontogram.baseline[toothId];
     const evolutionData = patient.odontogram.evolution[toothId];
 
-    // Process baseline whole-tooth status/findings
+    const addFinding = (f, surface = null) => {
+        const displayName = HALLAZGOS_CONFIG[f.tipo]?.name || f.tipo;
+        const surfSuffix = surface ? ` en ${getSurfaceNameSpanish(surface)}` : '';
+        descriptions.push(`<span class="badge badge-info" style="margin-right: 5px;">Inicial: ${displayName}${surfSuffix}</span> ${f.especificaciones ? `(${f.especificaciones})` : ''}`);
+    };
+
     if (baselineData) {
-        if (baselineData.status === 'absent') {
-            descriptions.push(`<span class="badge badge-danger" style="margin-right: 5px;">Inicial: Ausente</span>`);
-        }
         if (baselineData.findings) {
-            baselineData.findings.forEach(f => {
-                const displayName = HALLAZGOS_CONFIG[f.tipo]?.name || f.tipo;
-                descriptions.push(`<span class="badge badge-info" style="margin-right: 5px;">Inicial: ${displayName}</span> ${f.especificaciones ? `(${f.especificaciones})` : ''}`);
-            });
+            baselineData.findings.forEach(f => addFinding(f));
         }
         if (baselineData.surfaces) {
-            Object.entries(baselineData.surfaces).forEach(([surf, f]) => {
-                const displayName = HALLAZGOS_CONFIG[f.tipo]?.name || f.tipo;
-                descriptions.push(`<span class="badge badge-info" style="margin-right: 5px;">Inicial: ${displayName} en ${getSurfaceNameSpanish(surf)}</span> ${f.especificaciones ? `(${f.especificaciones})` : ''}`);
-            });
+            Object.entries(baselineData.surfaces).forEach(([surf, f]) => addFinding(f, surf));
         }
     }
 
-    // Process evolution whole-tooth status/findings
     if (evolutionData) {
-        if (evolutionData.status === 'extracted') {
-            descriptions.push(`<span class="badge badge-danger" style="margin-right: 5px;">Evolución: Extraído</span>`);
-        }
         if (evolutionData.findings) {
-            evolutionData.findings.forEach(f => {
-                const displayName = HALLAZGOS_CONFIG[f.tipo]?.name || f.tipo;
-                descriptions.push(`<span class="badge badge-primary" style="margin-right: 5px;">Evolución: ${displayName}</span> ${f.especificaciones ? `(${f.especificaciones})` : ''}`);
-            });
+            evolutionData.findings.forEach(f => addFinding(f));
         }
         if (evolutionData.surfaces) {
-            Object.entries(evolutionData.surfaces).forEach(([surf, f]) => {
-                const displayName = HALLAZGOS_CONFIG[f.tipo]?.name || f.tipo;
-                descriptions.push(`<span class="badge badge-primary" style="margin-right: 5px;">Evolución: ${displayName} en ${getSurfaceNameSpanish(surf)}</span> ${f.especificaciones ? `(${f.especificaciones})` : ''}`);
-            });
+            Object.entries(evolutionData.surfaces).forEach(([surf, f]) => addFinding(f, surf));
         }
     }
 
