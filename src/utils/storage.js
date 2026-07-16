@@ -161,6 +161,15 @@ export async function updateUser(id, userData) {
     return data;
 }
 
+export async function deleteUser(id) {
+    const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', id);
+    if (error) throw error;
+    return true;
+}
+
 // --- ODONTOGRAM RECORDS METHODS ---
 export async function getOdontogramRecords(patientId) {
     const { data, error } = await supabase
