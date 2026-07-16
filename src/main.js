@@ -19,7 +19,7 @@ import {
 import { hashPassword, verifyUser, getRoleNameSpanish, checkSession, logout } from './auth/authEngine.js';
 import { isWithinFourHours, saveAppointment, cancelAppointment } from './modules/appointments.js';
 import { calculateAge, addPatient, addEvolutionNote } from './modules/patients.js';
-import { saveBaselineState, reconstructOdontogramState, validateFinding } from './modules/odontogram.js';
+import { saveBaselineState, OdontogramController } from './modules/odontogram.js';
 import { exportPatientPDFDirect } from './utils/pdf-generator.js';
 
 // Application State
@@ -993,15 +993,14 @@ async function loadEHRForPatient() {
     const patient = appState.patients.find(p => p.id === patientId);
     if (!patient) return;
 
-    // Fetch records from Supabase and reconstruct state
     try {
-        const records = await getOdontogramRecords(patientId);
-        const { baseline, evolution } = reconstructOdontogramState(records);
+        const odoState = await OdontogramController.loadPatientOdontogram(patientId);
         patient.odontogram = {
             ...patient.odontogram,
-            baseline,
-            evolution
+            baseline: odoState.baseline,
+            evolution: odoState.evolution
         };
+        OdontogramController.isFrozen = !!(patient.odontogram && patient.odontogram.baselineFrozen);
     } catch (err) {
         console.error("Error loading odontogram records:", err.message);
     }
@@ -1130,10 +1129,60 @@ function drawOdontogramTeethLayout(patient) {
     childLower.innerHTML = '';
     adultLower.innerHTML = '';
 
-    adultUpperTeeth.forEach(tId => adultUpper.appendChild(createToothElement(tId, patient)));
-    childUpperTeeth.forEach(tId => childUpper.appendChild(createToothElement(tId, patient)));
-    childLowerTeeth.forEach(tId => childLower.appendChild(createToothElement(tId, patient)));
-    adultLowerTeeth.forEach(tId => adultLower.appendChild(createToothElement(tId, patient)));
+    const fragAdultUpper = document.createDocumentFragment();
+    const fragChildUpper = document.createDocumentFragment();
+    const fragChildLower = document.createDocumentFragment();
+    const fragAdultLower = document.createDocumentFragment();
+
+    adultUpperTeeth.forEach(tId => {
+        const el = createToothElement(tId, patient);
+        fragAdultUpper.appendChild(el);
+        const toothBaseline = patient.odontogram.baseline[tId] || null;
+        const toothEvolution = patient.odontogram.evolution[tId] || null;
+        OdontogramController.toothStateCache.set(tId, JSON.stringify({ toothBaseline, toothEvolution }));
+    });
+
+    childUpperTeeth.forEach(tId => {
+        const el = createToothElement(tId, patient);
+        fragChildUpper.appendChild(el);
+        const toothBaseline = patient.odontogram.baseline[tId] || null;
+        const toothEvolution = patient.odontogram.evolution[tId] || null;
+        OdontogramController.toothStateCache.set(tId, JSON.stringify({ toothBaseline, toothEvolution }));
+    });
+
+    childLowerTeeth.forEach(tId => {
+        const el = createToothElement(tId, patient);
+        fragChildLower.appendChild(el);
+        const toothBaseline = patient.odontogram.baseline[tId] || null;
+        const toothEvolution = patient.odontogram.evolution[tId] || null;
+        OdontogramController.toothStateCache.set(tId, JSON.stringify({ toothBaseline, toothEvolution }));
+    });
+
+    adultLowerTeeth.forEach(tId => {
+        const el = createToothElement(tId, patient);
+        fragAdultLower.appendChild(el);
+        const toothBaseline = patient.odontogram.baseline[tId] || null;
+        const toothEvolution = patient.odontogram.evolution[tId] || null;
+        OdontogramController.toothStateCache.set(tId, JSON.stringify({ toothBaseline, toothEvolution }));
+    });
+
+    adultUpper.appendChild(fragAdultUpper);
+    childUpper.appendChild(fragChildUpper);
+    childLower.appendChild(fragChildLower);
+    adultLower.appendChild(fragAdultLower);
+}
+
+function updateSingleToothDOM(tId, patient) {
+    if (!OdontogramController.didToothStateChange(tId)) {
+        console.log(`[Odontograma MEMOIZACIÓN]: Pieza ${tId} no cambió. Omitiendo renderizado.`);
+        return;
+    }
+    console.log(`[Odontograma RENDER]: Re-renderizando pieza ${tId}.`);
+    const newToothEl = createToothElement(tId, patient);
+    const existingToothEl = document.getElementById(`tooth-block-${tId}`);
+    if (existingToothEl && existingToothEl.parentNode) {
+        existingToothEl.parentNode.replaceChild(newToothEl, existingToothEl);
+    }
 }
 
 function createToothElement(tId, patient) {
@@ -1608,6 +1657,7 @@ async function saveBaselineStateFlow() {
     if (confirm("¿Está seguro que desea CONGELAR el estado inicial del odontograma? Esta acción firmará digitalmente el baseline y lo hará inalterable por ley.")) {
         try {
             saveBaselineState(patient);
+            OdontogramController.isFrozen = true;
             await updatePatientInDB(patient.id, { odontogram: patient.odontogram });
             updateOdontogramControls(patient);
             alert("El estado inicial de admisión ha sido congelado correctamente.");
@@ -1678,51 +1728,33 @@ document.getElementById('odontogram-finding-form').addEventListener('submit', as
         return;
     }
 
-    try {
-        validateFinding({
-            toothId,
-            tipo_hallazgo,
-            especificaciones
-        }, patient.odontogram);
-    } catch (validationErr) {
-        alert(validationErr.message);
-        return;
-    }
-
     const isBaseline = currentOdontogramMode === 'baseline';
 
-    if (isBaseline && patient.odontogram && patient.odontogram.baselineFrozen) {
-        alert("El Odontograma Inicial ya se encuentra congelado y es inalterable.");
-        return;
-    }
-
     try {
-        const record = {
-            patient_id: patientId,
+        // Atomic transaction: validation, DB saving, and state update
+        await OdontogramController.saveOdontogramRecord({
             tooth_id: toothId,
             surface,
             tipo_hallazgo,
             estado,
-            especificaciones,
-            is_baseline: isBaseline,
-            author_id: appState.currentUser.id // Signed by logged professional
-        };
+            especificaciones
+        }, isBaseline, appState.currentUser.id);
 
-        // Insert record to Supabase
-        await insertOdontogramRecord(record);
+        // Synchronize in-memory patient odontogram state
+        patient.odontogram.baseline = OdontogramController.reconstructedState.baseline;
+        patient.odontogram.evolution = OdontogramController.reconstructedState.evolution;
 
-        // Reload patient EHR to fetch records and redraw
-        await loadEHRForPatient();
+        // Perform selective tooth re-rendering (pure JS memoized check)
+        updateSingleToothDOM(toothId, patient);
 
-        // Auto-generate evolution/admission log note in text timeline
+        // Auto-generate evolution log note
         const typeLabel = document.getElementById('finding-type-select').options[document.getElementById('finding-type-select').selectedIndex].text;
-        const targetLabel = surface ? `pieza ${toothId} (${getSurfaceNameSpanish(surface)})` : `pieza ${toothId}`;
         const logText = `[ODONTOGRAMA ${isBaseline ? 'INICIAL' : 'EVOLUTIVO'}]: Se registra ${typeLabel}. Estado: ${estado ? 'Buen estado / Existente' : 'Mal estado / Patología / Requerido'}. Especificación: ${especificaciones}`;
         const systemTimeStr = appState.systemTime.toISOString();
         await addEvolutionNote(patientId, logText, appState.currentUser.name, systemTimeStr, appState);
 
-        // Reload to show new note and redraw
-        await loadEHRForPatient();
+        // Refresh evolution notes list in UI without reloading/redrawing all teeth
+        renderEvolutionNotesList(patient);
 
         closeFindingModal();
     } catch (err) {
