@@ -27,7 +27,7 @@ import {
 import { hashPassword, verifyUser, getRoleNameSpanish, checkSession, logout } from './auth/authEngine.js';
 import { isWithinFourHours, saveAppointment, cancelAppointment } from './modules/appointments.js';
 import { calculateAge, addPatient, addEvolutionNote } from './modules/patients.js';
-import { saveBaselineState, OdontogramController } from './modules/odontogram.js';
+import { saveBaselineState, OdontogramController, HALLAZGOS_CONFIG } from './modules/odontogram.js';
 import { exportPatientPDFDirect } from './utils/pdf-generator.js';
 
 // Application State
@@ -1996,7 +1996,6 @@ async function renderTarifarioList() {
             <td><span class="badge badge-info">${item.categoria}</span></td>
             <td><strong>${item.nombre}</strong></td>
             <td>S/ ${parseFloat(item.precio_soles).toFixed(2)}</td>
-            <td>$ ${parseFloat(item.precio_dolares).toFixed(2)}</td>
             <td>
                 <button class="btn btn-outline btn-sm mr-1" onclick="openTarifarioModal('${item.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
                 <button class="btn btn-danger-outline btn-sm" onclick="deleteTarifarioCatalogItem('${item.id}')"><i class="fa-solid fa-trash"></i> Eliminar</button>
@@ -2019,11 +2018,12 @@ function openTarifarioModal(itemId = '') {
             document.getElementById('tarifario-nombre').value = item.nombre;
             document.getElementById('tarifario-categoria').value = item.categoria;
             document.getElementById('tarifario-precio-soles').value = item.precio_soles;
-            document.getElementById('tarifario-precio-dolares').value = item.precio_dolares;
+            document.getElementById('tarifario-precio-dolares').value = item.precio_dolares || 0;
         }
     } else {
         document.getElementById('tarifario-modal-title').innerText = "Nuevo Procedimiento";
         document.getElementById('tarifario-item-id').value = '';
+        document.getElementById('tarifario-precio-dolares').value = 0;
     }
     
     modal.classList.add('active');
@@ -2039,7 +2039,7 @@ document.getElementById('tarifario-form').addEventListener('submit', async (e) =
     const nombre = document.getElementById('tarifario-nombre').value.trim();
     const categoria = document.getElementById('tarifario-categoria').value;
     const precio_soles = parseFloat(document.getElementById('tarifario-precio-soles').value);
-    const precio_dolares = parseFloat(document.getElementById('tarifario-precio-dolares').value);
+    const precio_dolares = parseFloat(document.getElementById('tarifario-precio-dolares').value) || 0;
 
     const itemData = { nombre, categoria, precio_soles, precio_dolares };
 
@@ -2070,6 +2070,89 @@ async function deleteTarifarioCatalogItem(id) {
 // ============================================================================
 // PATIENT TREATMENT PLAN CRUD & WORKFLOW
 // ============================================================================
+function getToothFindingsSummary(toothId, patient) {
+    const descriptions = [];
+    if (!patient || !patient.odontogram) return descriptions;
+    
+    const baselineData = patient.odontogram.baseline[toothId];
+    const evolutionData = patient.odontogram.evolution[toothId];
+
+    // Process baseline whole-tooth status/findings
+    if (baselineData) {
+        if (baselineData.status === 'absent') {
+            descriptions.push(`<span class="badge badge-danger" style="margin-right: 5px;">Inicial: Ausente</span>`);
+        }
+        if (baselineData.findings) {
+            baselineData.findings.forEach(f => {
+                const displayName = HALLAZGOS_CONFIG[f.tipo]?.name || f.tipo;
+                descriptions.push(`<span class="badge badge-info" style="margin-right: 5px;">Inicial: ${displayName}</span> ${f.especificaciones ? `(${f.especificaciones})` : ''}`);
+            });
+        }
+        if (baselineData.surfaces) {
+            Object.entries(baselineData.surfaces).forEach(([surf, f]) => {
+                const displayName = HALLAZGOS_CONFIG[f.tipo]?.name || f.tipo;
+                descriptions.push(`<span class="badge badge-info" style="margin-right: 5px;">Inicial: ${displayName} en ${getSurfaceNameSpanish(surf)}</span> ${f.especificaciones ? `(${f.especificaciones})` : ''}`);
+            });
+        }
+    }
+
+    // Process evolution whole-tooth status/findings
+    if (evolutionData) {
+        if (evolutionData.status === 'extracted') {
+            descriptions.push(`<span class="badge badge-danger" style="margin-right: 5px;">Evolución: Extraído</span>`);
+        }
+        if (evolutionData.findings) {
+            evolutionData.findings.forEach(f => {
+                const displayName = HALLAZGOS_CONFIG[f.tipo]?.name || f.tipo;
+                descriptions.push(`<span class="badge badge-primary" style="margin-right: 5px;">Evolución: ${displayName}</span> ${f.especificaciones ? `(${f.especificaciones})` : ''}`);
+            });
+        }
+        if (evolutionData.surfaces) {
+            Object.entries(evolutionData.surfaces).forEach(([surf, f]) => {
+                const displayName = HALLAZGOS_CONFIG[f.tipo]?.name || f.tipo;
+                descriptions.push(`<span class="badge badge-primary" style="margin-right: 5px;">Evolución: ${displayName} en ${getSurfaceNameSpanish(surf)}</span> ${f.especificaciones ? `(${f.especificaciones})` : ''}`);
+            });
+        }
+    }
+
+    return descriptions;
+}
+
+function populateTreatmentPlanDiagnoses(patient) {
+    const tbody = document.getElementById('treatment-plan-diagnoses-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const allTeeth = [
+        ...adultUpperTeeth, ...childUpperTeeth, ...childLowerTeeth, ...adultLowerTeeth
+    ].sort((a,b) => a-b);
+
+    let hasAnyFindings = false;
+
+    allTeeth.forEach(tId => {
+        const descriptions = getToothFindingsSummary(tId, patient);
+        if (descriptions.length > 0) {
+            hasAnyFindings = true;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight: 700; color: #1e293b; padding: 10px;">Pieza ${tId}</td>
+                <td style="line-height: 1.6; padding: 10px;">${descriptions.join('<br>')}</td>
+            `;
+            tbody.appendChild(tr);
+        }
+    });
+
+    if (!hasAnyFindings) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="2" class="text-center text-muted py-4">
+                    No se registran hallazgos clínicos (Patologías o condiciones) en el odontograma.
+                </td>
+            </tr>
+        `;
+    }
+}
+
 async function initializeTreatmentPlanView() {
     const patientId = document.getElementById('ehr-patient-select').value;
     const patientNameLabel = document.getElementById('treatment-plan-patient-name');
@@ -2079,7 +2162,7 @@ async function initializeTreatmentPlanView() {
 
     if (!patientId) {
         patientNameLabel.innerText = "Ningún paciente seleccionado";
-        document.getElementById('treatment-plan-table-body').innerHTML = '<tr><td colspan="6" class="text-center text-muted">Seleccione un paciente en la ficha clínica primero.</td></tr>';
+        document.getElementById('treatment-plan-table-body').innerHTML = '<tr><td colspan="5" class="text-center text-muted">Seleccione un paciente en la ficha clínica primero.</td></tr>';
         return;
     }
 
@@ -2099,7 +2182,7 @@ async function initializeTreatmentPlanView() {
     appState.treatmentsCatalog.forEach(item => {
         const opt = document.createElement('option');
         opt.value = item.id;
-        opt.innerText = `${item.nombre} (S/ ${parseFloat(item.precio_soles).toFixed(2)} | $ ${parseFloat(item.precio_dolares).toFixed(2)})`;
+        opt.innerText = `${item.nombre} (S/ ${parseFloat(item.precio_soles).toFixed(2)})`;
         treatmentSelect.appendChild(opt);
     });
 
@@ -2115,13 +2198,8 @@ async function initializeTreatmentPlanView() {
         toothSelect.appendChild(opt);
     });
 
-    // Render read-only odontogram reference
-    drawOdontogramTeethLayoutForContainer(patient, {
-        adultUpper: 'odontogram-treatment-plan-adult-upper',
-        childUpper: 'odontogram-treatment-plan-child-upper',
-        childLower: 'odontogram-treatment-plan-child-lower',
-        adultLower: 'odontogram-treatment-plan-adult-lower'
-    });
+    // Render diagnoses table instead of read-only odontogram canvas
+    populateTreatmentPlanDiagnoses(patient);
 
     // Load and render patient treatment plan items
     await loadPatientTreatmentPlans(patientId);
@@ -2140,30 +2218,23 @@ async function loadPatientTreatmentPlans(patientId) {
 
     let solesPending = 0;
     let solesDone = 0;
-    let dollarsPending = 0;
-    let dollarsDone = 0;
 
     appState.patientTreatmentPlans.forEach(item => {
         const soles = parseFloat(item.precio_soles_aplicado);
-        const dollars = parseFloat(item.precio_dolares_aplicado);
-
-        if (item.estado === 'realizado') {
-            solesDone += soles;
-            dollarsDone += dollars;
-        } else {
-            solesPending += soles;
-            dollarsPending += dollars;
-        }
-
         const toothLabel = item.tooth_id ? `Pieza ${item.tooth_id}` : 'General';
         const isDone = item.estado === 'realizado';
+
+        if (isDone) {
+            solesDone += soles;
+        } else {
+            solesPending += soles;
+        }
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><strong>${item.treatments_catalog?.nombre || 'Procedimiento'}</strong></td>
             <td>${toothLabel}</td>
             <td>S/ ${soles.toFixed(2)}</td>
-            <td>$ ${dollars.toFixed(2)}</td>
             <td>
                 <span class="badge ${isDone ? 'badge-success' : 'badge-warning'}">
                     ${isDone ? '<i class="fa-solid fa-circle-check"></i> Realizado' : 'Pendiente'}
@@ -2182,8 +2253,6 @@ async function loadPatientTreatmentPlans(patientId) {
     // Update summaries
     document.getElementById('plan-total-soles-pending').innerText = `S/ ${solesPending.toFixed(2)}`;
     document.getElementById('plan-total-soles-done').innerText = `S/ ${solesDone.toFixed(2)}`;
-    document.getElementById('plan-total-dollars-pending').innerText = `$ ${dollarsPending.toFixed(2)}`;
-    document.getElementById('plan-total-dollars-done').innerText = `$ ${dollarsDone.toFixed(2)}`;
 }
 
 document.getElementById('add-treatment-plan-form').addEventListener('submit', async (e) => {
@@ -2203,7 +2272,7 @@ document.getElementById('add-treatment-plan-form').addEventListener('submit', as
         tooth_id,
         estado: 'pendiente',
         precio_soles_aplicado: treatment.precio_soles,   // Historical price preserved
-        precio_dolares_aplicado: treatment.precio_dolares // Historical price preserved
+        precio_dolares_aplicado: treatment.precio_dolares || 0
     };
 
     try {
