@@ -174,17 +174,24 @@
 
 .teeth-row {
     display: flex;
-    gap: 6px;
+    gap: 3px;
     justify-content: center;
     flex-wrap: nowrap;
+    align-items: flex-end;
+}
+
+/* Lower arch rows: roots point UP, so align to top */
+#odontogram-child-lower,
+#odontogram-adult-lower {
+    align-items: flex-start;
 }
 
 .tooth-block {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.25rem;
-    width: 44px;
+    gap: 1px;
+    width: 50px;
     padding: 2px;
     border-radius: 4px;
     transition: background-color var(--transition-fast);
@@ -245,25 +252,28 @@
     position: relative;
 }
 
-/* Draw a cross over absent teeth using an absolute SVG layer or CSS */
+/* Tooth SVG wrapper - size set dynamically per tooth */
 .tooth-svg-wrapper {
     position: relative;
-    width: 40px;
-    height: 40px;
 }
 
-.absent-cross {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+/* Root styling */
+.tooth-root {
     pointer-events: none;
-    display: none;
 }
 
-.tooth-block.absent .absent-cross {
-    display: block;
+/* Absent cross lines - hidden by default */
+.absent-line {
+    display: none;
+    pointer-events: none;
+}
+
+.tooth-block.absent .absent-line {
+    display: inline;
+}
+
+.tooth-block.absent .tooth-root {
+    opacity: 0.3;
 }
 
 .tooth-block.selected-tooth {
@@ -416,4 +426,31 @@
 
 .search-clear-btn:hover {
     color: var(--danger-color);
+}
+
+/* Color overrides for COP standard */
+.surface.curation-filled {
+    fill: #0043c7 !important; /* COP Standard Blue */
+    stroke: #002b80;
+}
+
+.surface.pathology-filled {
+    fill: #ef4444 !important; /* COP Standard Red */
+    stroke: #b91c1c;
+}
+
+/* Restrictive overlays */
+.tooth-block.absent .tooth-root {
+    opacity: 0.15;
+}
+
+/* Finding modal customizations */
+#odontogram-finding-modal .modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+#odontogram-finding-modal label {
+    font-weight: 600;
 }
