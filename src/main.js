@@ -11,12 +11,15 @@ import {
     deleteUser as deleteUserInDB, 
     updateUser as updateUserInDB,
     updateAppointment,
-    updatePatient as updatePatientInDB
+    updatePatient as updatePatientInDB,
+    getOdontogramRecords,
+    insertOdontogramRecord,
+    deleteOdontogramRecord
 } from './utils/storage.js';
 import { hashPassword, verifyUser, getRoleNameSpanish, checkSession, logout } from './auth/authEngine.js';
 import { isWithinFourHours, saveAppointment, cancelAppointment } from './modules/appointments.js';
 import { calculateAge, addPatient, addEvolutionNote } from './modules/patients.js';
-import { saveBaselineState, applyTreatment } from './modules/odontogram.js';
+import { saveBaselineState, reconstructOdontogramState } from './modules/odontogram.js';
 import { exportPatientPDFDirect } from './utils/pdf-generator.js';
 
 // Application State
@@ -30,10 +33,10 @@ let appState = {
 };
 
 // UI State Constants
-const adultUpperTeeth = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-const childUpperTeeth = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-const childLowerTeeth = ['K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T'];
-const adultLowerTeeth = [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
+const adultUpperTeeth = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
+const childUpperTeeth = [55, 54, 53, 52, 51, 61, 62, 63, 64, 65];
+const childLowerTeeth = [85, 84, 83, 82, 81, 71, 72, 73, 74, 75];
+const adultLowerTeeth = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
 
 let currentOdontogramMode = 'baseline'; // baseline or evolution
 let selectedToothId = null;
@@ -977,7 +980,7 @@ function populateEHRSelector() {
 }
 
 // EHR UI functions
-function loadEHRForPatient() {
+async function loadEHRForPatient() {
     const patientId = document.getElementById('ehr-patient-select').value;
     if (!patientId) {
         clearEHRPanel();
@@ -986,6 +989,19 @@ function loadEHRForPatient() {
 
     const patient = appState.patients.find(p => p.id === patientId);
     if (!patient) return;
+
+    // Fetch records from Supabase and reconstruct state
+    try {
+        const records = await getOdontogramRecords(patientId);
+        const { baseline, evolution } = reconstructOdontogramState(records);
+        patient.odontogram = {
+            ...patient.odontogram,
+            baseline,
+            evolution
+        };
+    } catch (err) {
+        console.error("Error loading odontogram records:", err.message);
+    }
 
     // Update search input to match selected patient
     const searchInput = document.getElementById('ehr-patient-search');
@@ -1135,8 +1151,7 @@ function createToothElement(tId, patient) {
         selectToothBlock(tId);
     };
 
-    const isLower = (typeof tId === 'number' && tId >= 17) ||
-                    (typeof tId === 'string' && 'KLMNOPQRST'.includes(tId));
+    const isLower = (tId >= 31 && tId <= 48) || (tId >= 71 && tId <= 85);
 
     const rootConfig = getToothRootConfig(tId);
     const rootSvg = buildRootSVG(rootConfig, isLower);
@@ -1171,6 +1186,8 @@ function createToothElement(tId, patient) {
     const ir = cX + crownW * 0.7;
     const it = crownOffsetY + crownH * 0.3;
     const ib = crownOffsetY + crownH * 0.7;
+    const midX = cX + crownW / 2;
+    const midY = crownOffsetY + crownH / 2;
 
     svgStr += `<polygon points="${l},${t} ${r},${t} ${ir},${it} ${il},${it}" class="surface buccal" data-surface="buccal"></polygon>`;
     svgStr += `<polygon points="${r},${t} ${r},${b} ${ir},${ib} ${ir},${it}" class="surface distal" data-surface="distal"></polygon>`;
@@ -1178,9 +1195,52 @@ function createToothElement(tId, patient) {
     svgStr += `<polygon points="${l},${t} ${l},${b} ${il},${ib} ${il},${it}" class="surface mesial" data-surface="mesial"></polygon>`;
     svgStr += `<polygon points="${il},${it} ${ir},${it} ${ir},${ib} ${il},${ib}" class="surface occlusal" data-surface="occlusal"></polygon>`;
 
-    // --- ABSENT CROSS ---
-    svgStr += `<line class="absent-line" x1="${l + 3}" y1="${t + 3}" x2="${r - 3}" y2="${b - 3}" stroke="#ef4444" stroke-width="3" />`;
-    svgStr += `<line class="absent-line" x1="${r - 3}" y1="${t + 3}" x2="${l + 3}" y2="${b - 3}" stroke="#ef4444" stroke-width="3" />`;
+    // --- ABSENT / EXTRACTED CROSS ---
+    if (isAbsentInBaseline || isExtractedInEvolution) {
+        const crossColor = isExtractedInEvolution ? '#ef4444' : '#0043c7';
+        svgStr += `<line class="absent-line-new" x1="${l + 2}" y1="${t + 2}" x2="${r - 2}" y2="${b - 2}" stroke="${crossColor}" stroke-width="2.5" />`;
+        svgStr += `<line class="absent-line-new" x1="${r - 2}" y1="${t + 2}" x2="${l + 2}" y2="${b - 2}" stroke="${crossColor}" stroke-width="2.5" />`;
+    }
+
+    // --- CROWNS (CC, CF, CMC, 3/4, CV) ---
+    const baselineCrown = patient.odontogram.baseline[tId] && patient.odontogram.baseline[tId].status === 'crown' ? patient.odontogram.baseline[tId] : null;
+    const evolutionCrown = patient.odontogram.evolution[tId] && patient.odontogram.evolution[tId].status === 'crown' ? patient.odontogram.evolution[tId] : null;
+    const activeCrown = evolutionCrown || baselineCrown;
+    if (activeCrown) {
+        const color = activeCrown.estado ? '#0043c7' : '#ef4444';
+        svgStr += `<circle cx="${midX}" cy="${midY}" r="21" stroke="${color}" stroke-width="2.5" fill="none" />`;
+        svgStr += `<text x="${midX}" y="${isLower ? totalH - 2 : 11}" font-size="8.5" font-weight="700" fill="${color}" text-anchor="middle">${activeCrown.type}</text>`;
+    }
+
+    // --- PROSTHESIS (PF, PR) ---
+    const baselineProsthesis = patient.odontogram.baseline[tId] && patient.odontogram.baseline[tId].status === 'prosthesis' ? patient.odontogram.baseline[tId] : null;
+    const evolutionProsthesis = patient.odontogram.evolution[tId] && patient.odontogram.evolution[tId].status === 'prosthesis' ? patient.odontogram.evolution[tId] : null;
+    const activeProsthesis = evolutionProsthesis || baselineProsthesis;
+    if (activeProsthesis) {
+        const color = activeProsthesis.estado ? '#0043c7' : '#ef4444';
+        svgStr += `<line x1="${l}" y1="${t + 12}" x2="${r}" y2="${t + 12}" stroke="${color}" stroke-width="2" />`;
+        svgStr += `<line x1="${l}" y1="${t + 28}" x2="${r}" y2="${t + 28}" stroke="${color}" stroke-width="2" />`;
+        svgStr += `<text x="${midX}" y="${isLower ? totalH - 2 : 11}" font-size="8.5" font-weight="700" fill="${color}" text-anchor="middle">${activeProsthesis.type}</text>`;
+    }
+
+    // --- REMANENTE RADICULAR (RR) ---
+    const baselineRemanente = patient.odontogram.baseline[tId] && patient.odontogram.baseline[tId].status === 'remanente' ? patient.odontogram.baseline[tId] : null;
+    const evolutionRemanente = patient.odontogram.evolution[tId] && patient.odontogram.evolution[tId].status === 'remanente' ? patient.odontogram.evolution[tId] : null;
+    const activeRemanente = evolutionRemanente || baselineRemanente;
+    if (activeRemanente) {
+        const color = '#ef4444'; // RR is always pathological (red)
+        svgStr += `<text x="${midX}" y="${rootOffsetY + rootH / 2 + 3}" font-size="9" font-weight="800" fill="${color}" text-anchor="middle">RR</text>`;
+    }
+
+    // --- TRATAMIENTO PULPAR (TP) ---
+    const baselinePulpar = patient.odontogram.baseline[tId] && patient.odontogram.baseline[tId].status === 'pulpar' ? patient.odontogram.baseline[tId] : null;
+    const evolutionPulpar = patient.odontogram.evolution[tId] && patient.odontogram.evolution[tId].status === 'pulpar' ? patient.odontogram.evolution[tId] : null;
+    const activePulpar = evolutionPulpar || baselinePulpar;
+    if (activePulpar) {
+        const color = activePulpar.estado ? '#0043c7' : '#ef4444';
+        svgStr += `<line x1="${midX}" y1="${t + 20}" x2="${midX}" y2="${rootOffsetY + rootH}" stroke="${color}" stroke-width="2.5" />`;
+        svgStr += `<text x="${midX}" y="${isLower ? totalH - 2 : 11}" font-size="8.5" font-weight="700" fill="${color}" text-anchor="middle">TP</text>`;
+    }
 
     svgStr += `</svg>`;
     svgWrapper.innerHTML = svgStr;
@@ -1191,25 +1251,29 @@ function createToothElement(tId, patient) {
         const surfName = poly.getAttribute('data-surface');
         poly.onclick = (event) => selectSurfaceClick(event, tId, surfName);
 
-        if (patient.odontogram.evolution[tId] && patient.odontogram.evolution[tId].surfaces) {
-            const trtState = patient.odontogram.evolution[tId].surfaces[surfName];
-            if (trtState) {
-                poly.classList.add(`${trtState}-filled`);
-            }
+        // Find active surface finding (evolution overrides baseline)
+        let activeSurf = null;
+        if (patient.odontogram.evolution[tId] && patient.odontogram.evolution[tId].surfaces && patient.odontogram.evolution[tId].surfaces[surfName]) {
+            activeSurf = patient.odontogram.evolution[tId].surfaces[surfName];
+        } else if (patient.odontogram.baseline[tId] && patient.odontogram.baseline[tId].surfaces && patient.odontogram.baseline[tId].surfaces[surfName]) {
+            activeSurf = patient.odontogram.baseline[tId].surfaces[surfName];
+        }
+
+        if (activeSurf) {
+            const fillClass = activeSurf.estado ? 'curation-filled' : 'pathology-filled';
+            poly.classList.add(fillClass);
         }
     });
 
-    // Build the tooth block layout: number + svg (order differs for upper/lower)
+    // Build the tooth block layout
     const numberLabel = document.createElement('span');
     numberLabel.className = 'tooth-number';
     numberLabel.innerText = tId;
 
     if (isLower) {
-        // Lower: crown+roots (roots on top) then number below
         div.appendChild(svgWrapper);
         div.appendChild(numberLabel);
     } else {
-        // Upper: number on top, then crown+roots (roots on bottom)
         div.appendChild(numberLabel);
         div.appendChild(svgWrapper);
     }
@@ -1217,40 +1281,35 @@ function createToothElement(tId, patient) {
     return div;
 }
 
-// Tooth root configuration based on dental anatomy
+// Tooth root configuration based on FDI clinical anatomy
 function getToothRootConfig(tId) {
-    // Child teeth (letters) - all single root, shorter
-    if (typeof tId === 'string') {
-        const childMolars = ['D', 'E', 'I', 'J', 'N', 'O', 'S', 'T'];
+    // Child teeth (FDI 51-85)
+    if (tId >= 51 && tId <= 85) {
+        const childMolars = [54, 55, 64, 65, 74, 75, 84, 85];
         if (childMolars.includes(tId)) {
             return { roots: 2, height: 22, type: 'child-molar' };
         }
         return { roots: 1, height: 18, type: 'child-single' };
     }
 
-    // Adult teeth (numbers 1-32 ADA Universal)
-    // Upper arch: 1-16, Lower arch: 17-32
-    const n = tId;
+    // Adult teeth (FDI 11-48)
+    // Upper molars (18, 17, 16, 26, 27, 28) -> 3 roots
+    if ([18, 17, 16, 26, 27, 28].includes(tId)) return { roots: 3, height: 30, type: 'molar-3' };
+    // Upper premolars (15, 14, 24, 25) -> 2 roots
+    if ([15, 14, 24, 25].includes(tId)) return { roots: 2, height: 26, type: 'premolar-2' };
+    // Canines (13, 23) -> 1 long root
+    if ([13, 23].includes(tId)) return { roots: 1, height: 28, type: 'canine' };
+    // Incisors (12, 11, 21, 22) -> 1 root
+    if ([12, 11, 21, 22].includes(tId)) return { roots: 1, height: 24, type: 'incisor' };
 
-    // --- UPPER ARCH ---
-    // Molars: 1,2,3 (upper right) and 14,15,16 (upper left) → 3 roots
-    if ([1, 2, 3, 14, 15, 16].includes(n)) return { roots: 3, height: 30, type: 'molar-3' };
-    // Premolars: 4,5 (upper right) and 12,13 (upper left) → 2 roots
-    if ([4, 5, 12, 13].includes(n)) return { roots: 2, height: 26, type: 'premolar-2' };
-    // Canines: 6 (upper right) and 11 (upper left) → 1 long root
-    if ([6, 11].includes(n)) return { roots: 1, height: 28, type: 'canine' };
-    // Incisors: 7,8,9,10 → 1 root
-    if ([7, 8, 9, 10].includes(n)) return { roots: 1, height: 24, type: 'incisor' };
-
-    // --- LOWER ARCH ---
-    // Molars: 17,18,19 (lower left) and 30,31,32 (lower right) → 2 roots
-    if ([17, 18, 19, 30, 31, 32].includes(n)) return { roots: 2, height: 28, type: 'molar-2' };
-    // Premolars: 20,21 (lower left) and 28,29 (lower right) → 1 root
-    if ([20, 21, 28, 29].includes(n)) return { roots: 1, height: 24, type: 'premolar-1' };
-    // Canines: 22 (lower left) and 27 (lower right) → 1 root
-    if ([22, 27].includes(n)) return { roots: 1, height: 26, type: 'canine' };
-    // Incisors: 23,24,25,26 → 1 root
-    if ([23, 24, 25, 26].includes(n)) return { roots: 1, height: 22, type: 'incisor' };
+    // Lower molars (48, 47, 46, 36, 37, 38) -> 2 roots
+    if ([48, 47, 46, 36, 37, 38].includes(tId)) return { roots: 2, height: 28, type: 'molar-2' };
+    // Lower premolars (45, 44, 34, 35) -> 1 root
+    if ([45, 44, 34, 35].includes(tId)) return { roots: 1, height: 24, type: 'premolar-1' };
+    // Canines (43, 33) -> 1 root
+    if ([43, 33].includes(tId)) return { roots: 1, height: 26, type: 'canine' };
+    // Incisors (42, 41, 31, 32) -> 1 root
+    if ([42, 41, 31, 32].includes(tId)) return { roots: 1, height: 22, type: 'incisor' };
 
     return { roots: 1, height: 22, type: 'default' };
 }
@@ -1352,62 +1411,31 @@ function buildRootSVG(config, isLower) {
 async function selectToothBlock(tId) {
     const patientId = document.getElementById('ehr-patient-select').value;
     const patient = appState.patients.find(p => p.id === patientId);
+    if (!patient) return;
 
     if (currentOdontogramMode === 'baseline') {
         if (patient.odontogram.baselineFrozen) {
-            alert("La ficha diagnóstica inicial está congelada. Cambie al modo 'Tratamiento y Evolución' para registrar incidencias.");
+            alert("La ficha diagnóstica inicial está congelada y no puede modificarse.");
             return;
         }
-
-        const block = document.getElementById(`tooth-block-${tId}`);
-        const currentlyAbsent = patient.odontogram.baseline[tId] === 'absent';
-        
-        if (currentlyAbsent) {
-            delete patient.odontogram.baseline[tId];
-            block.classList.remove('absent');
-        } else {
-            patient.odontogram.baseline[tId] = 'absent';
-            block.classList.add('absent');
-        }
+        openFindingModal(tId, null);
     } else {
-        highlightToothBlock(tId);
-        selectedToothId = tId;
-        selectedSurfaceName = null;
-        document.getElementById('treatment-tooth-select').value = `Pieza ${tId} (Toda la pieza)`;
+        openFindingModal(tId, null);
     }
 }
 
 function selectSurfaceClick(event, tId, surface) {
     event.stopPropagation();
-
-    if (currentOdontogramMode === 'baseline') {
-        selectToothBlock(tId);
-        return;
-    }
-
     const patientId = document.getElementById('ehr-patient-select').value;
     const patient = appState.patients.find(p => p.id === patientId);
+    if (!patient) return;
 
-    const isAbsentInBaseline = patient.odontogram.baseline[tId] === 'absent';
-    const isExtractedInEvolution = patient.odontogram.evolution[tId] && patient.odontogram.evolution[tId].status === 'extracted';
-
-    if (isAbsentInBaseline || isExtractedInEvolution) {
-        alert(`VALIDACIÓN DE INTEGRIDAD: La pieza dental ${tId} se encuentra marcada como AUSENTE o EXTRAÍDA. No se permite realizar tratamientos en sus superficies.`);
+    if (currentOdontogramMode === 'baseline' && patient.odontogram.baselineFrozen) {
+        alert("La ficha diagnóstica inicial está congelada y no puede modificarse.");
         return;
     }
 
-    highlightToothBlock(tId);
-    
-    const block = document.getElementById(`tooth-block-${tId}`);
-    block.querySelectorAll('.surface').forEach(s => s.style.stroke = '#94a3b8');
-    
-    const clickedSurface = block.querySelector(`.surface.${surface}`);
-    clickedSurface.style.stroke = 'var(--primary-color)';
-    clickedSurface.style.strokeWidth = '3';
-
-    selectedToothId = tId;
-    selectedSurfaceName = surface;
-    document.getElementById('treatment-tooth-select').value = `Pieza ${tId} - Sup. ${getSurfaceNameSpanish(surface)}`;
+    openFindingModal(tId, surface);
 }
 
 function highlightToothBlock(tId) {
@@ -1447,17 +1475,15 @@ function setOdontogramMode(mode) {
     if (mode === 'baseline') {
         document.getElementById('btn-odontogram-mode-baseline').classList.add('active');
         document.getElementById('baseline-actions').classList.remove('hidden');
-        helpText.innerText = "Modo Baseline: Configure el estado de ingreso del paciente. Al guardar, este registro se congelará de forma legal.";
+        helpText.innerText = "Modo Inicial (Baseline): Configure el estado de ingreso del paciente. Al guardar, este registro se congelará y firmará legalmente.";
     } else {
         document.getElementById('btn-odontogram-mode-evolution').classList.add('active');
         document.getElementById('evolution-actions').classList.remove('hidden');
-        helpText.innerText = "Modo Evolución: Seleccione superficies/dientes para registrar curaciones, sellantes o extracciones clínicas.";
+        helpText.innerText = "Modo Evolución: Haga clic en piezas o superficies dentales para registrar evoluciones, curaciones o tratamientos.";
     }
 
     selectedToothId = null;
     selectedSurfaceName = null;
-    document.getElementById('treatment-tooth-select').value = '';
-    document.getElementById('treatment-note-input').value = '';
     
     const patientId = document.getElementById('ehr-patient-select').value;
     if (patientId) {
@@ -1470,7 +1496,7 @@ function updateOdontogramControls(patient) {
     const saveBtn = document.getElementById('btn-save-baseline');
     const indicator = document.getElementById('baseline-saved-indicator');
 
-    if (patient.odontogram.baselineFrozen) {
+    if (patient.odontogram && patient.odontogram.baselineFrozen) {
         saveBtn.classList.add('hidden');
         indicator.classList.remove('hidden');
     } else {
@@ -1486,9 +1512,10 @@ async function saveBaselineStateFlow() {
     const patient = appState.patients.find(p => p.id === patientId);
     if (!patient) return;
 
-    if (confirm("¿Está seguro que desea CONGELAR el estado inicial del odontograma? Esta acción es irreversible por regulaciones legales.")) {
+    if (confirm("¿Está seguro que desea CONGELAR el estado inicial del odontograma? Esta acción firmará digitalmente el baseline y lo hará inalterable por ley.")) {
         try {
-            await saveBaselineState(patient);
+            saveBaselineState(patient);
+            await updatePatientInDB(patient.id, { odontogram: patient.odontogram });
             updateOdontogramControls(patient);
             alert("El estado inicial de admisión ha sido congelado correctamente.");
         } catch (err) {
@@ -1497,33 +1524,116 @@ async function saveBaselineStateFlow() {
     }
 }
 
-async function applyTreatmentToTooth() {
+function openFindingModal(tId, surface) {
+    const patientId = document.getElementById('ehr-patient-select').value;
+    if (!patientId) {
+        alert("Debe seleccionar un paciente primero.");
+        return;
+    }
+    const patient = appState.patients.find(p => p.id === patientId);
+    if (!patient) return;
+
+    highlightToothBlock(tId);
+
+    document.getElementById('finding-tooth-id').value = tId;
+    document.getElementById('finding-tooth-display').value = `Pieza FDI ${tId}`;
+    
+    document.getElementById('finding-surface-name').value = surface || '';
+    document.getElementById('finding-surface-display').value = surface ? getSurfaceNameSpanish(surface) : 'Toda la pieza';
+
+    // Reset fields
+    document.getElementById('finding-type-select').value = '';
+    document.getElementById('finding-state-select').value = 'true';
+    document.getElementById('finding-specifications').value = '';
+
+    // Filter findings select options based on surface or whole tooth
+    const typeSelect = document.getElementById('finding-type-select');
+    const surfaceGroup = typeSelect.querySelector('optgroup[label="Superficies Dentales"]');
+    const structuralGroup = typeSelect.querySelector('optgroup[label="Estructuras y Aparatos (Toda la Pieza)"]');
+    const rootGroup = typeSelect.querySelector('optgroup[label="Raíces y Pulpa"]');
+
+    if (surface) {
+        surfaceGroup.style.display = 'block';
+        structuralGroup.style.display = 'none';
+        rootGroup.style.display = 'none';
+    } else {
+        surfaceGroup.style.display = 'none';
+        structuralGroup.style.display = 'block';
+        rootGroup.style.display = 'block';
+    }
+
+    document.getElementById('odontogram-finding-modal').classList.add('active');
+}
+
+function closeFindingModal() {
+    document.getElementById('odontogram-finding-modal').classList.remove('active');
+}
+
+// Handler for finding form submit
+document.getElementById('odontogram-finding-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
     const patientId = document.getElementById('ehr-patient-select').value;
     if (!patientId) return;
 
-    const note = document.getElementById('treatment-note-input').value.trim();
-    if (!note) {
-        alert("Debe incluir una descripción detallada en la Nota del Procedimiento.");
+    const patient = appState.patients.find(p => p.id === patientId);
+    if (!patient) return;
+
+    const toothId = parseInt(document.getElementById('finding-tooth-id').value);
+    const surface = document.getElementById('finding-surface-name').value || null;
+    const tipo_hallazgo = document.getElementById('finding-type-select').value;
+    const estado = document.getElementById('finding-state-select').value === 'true';
+    const especificaciones = document.getElementById('finding-specifications').value.trim();
+
+    if (!tipo_hallazgo) {
+        alert("Debe seleccionar un tipo de hallazgo.");
         return;
     }
 
-    const type = document.getElementById('treatment-type-select').value;
+    if (!especificaciones) {
+        alert("Las especificaciones clínicas son obligatorias.");
+        return;
+    }
+
+    const isBaseline = currentOdontogramMode === 'baseline';
+
+    if (isBaseline && patient.odontogram && patient.odontogram.baselineFrozen) {
+        alert("El Odontograma Inicial ya se encuentra congelado y es inalterable.");
+        return;
+    }
 
     try {
+        const record = {
+            patient_id: patientId,
+            tooth_id: toothId,
+            surface,
+            tipo_hallazgo,
+            estado,
+            especificaciones,
+            is_baseline: isBaseline,
+            author_id: appState.currentUser.id // Signed by logged professional
+        };
+
+        // Insert record to Supabase
+        await insertOdontogramRecord(record);
+
+        // Reload patient EHR to fetch records and redraw
+        await loadEHRForPatient();
+
+        // Auto-generate evolution/admission log note in text timeline
+        const typeLabel = document.getElementById('finding-type-select').options[document.getElementById('finding-type-select').selectedIndex].text;
+        const targetLabel = surface ? `pieza ${toothId} (${getSurfaceNameSpanish(surface)})` : `pieza ${toothId}`;
+        const logText = `[ODONTOGRAMA ${isBaseline ? 'INICIAL' : 'EVOLUTIVO'}]: Se registra ${typeLabel}. Estado: ${estado ? 'Buen estado / Existente' : 'Mal estado / Patología / Requerido'}. Especificación: ${especificaciones}`;
         const systemTimeStr = appState.systemTime.toISOString();
-        await applyTreatment({
-            patientId,
-            toothId: selectedToothId,
-            surfaceName: selectedSurfaceName,
-            type,
-            note
-        }, appState, appState.currentUser.name, systemTimeStr);
-        
-        loadEHRForPatient();
+        await addEvolutionNote(patientId, logText, appState.currentUser.name, systemTimeStr, appState);
+
+        // Reload to show new note and redraw
+        await loadEHRForPatient();
+
+        closeFindingModal();
     } catch (err) {
-        alert(err.message);
+        alert("Error al registrar hallazgo: " + err.message);
     }
-}
+});
 
 function exportPatientPDF() {
     const patientId = document.getElementById('ehr-patient-select').value;
@@ -1560,7 +1670,7 @@ window.copyReminderText = copyReminderText;
 window.loadEHRForPatient = loadEHRForPatient;
 window.setOdontogramMode = setOdontogramMode;
 window.saveBaselineState = saveBaselineStateFlow;
-window.applyTreatmentToTooth = applyTreatmentToTooth;
+window.closeFindingModal = closeFindingModal;
 window.exportPatientPDF = exportPatientPDF;
 window.openUserModal = openUserModal;
 window.closeUserModal = closeUserModal;
