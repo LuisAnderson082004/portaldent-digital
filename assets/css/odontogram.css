@@ -460,3 +460,10 @@
     pointer-events: none;
     user-select: none;
 }
+
+/* GPU Rendering Accelerations */
+.tooth-block, .tooth-svg-wrapper {
+    will-change: transform, opacity;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+}
