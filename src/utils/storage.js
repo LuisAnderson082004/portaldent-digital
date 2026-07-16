@@ -297,3 +297,154 @@ export async function deleteOdontogramRecord(id) {
     if (error) throw error;
     return true;
 }
+
+// --- TREATMENTS CATALOG METHODS ---
+export async function getTreatmentsCatalog() {
+    if (isTestMode()) {
+        if (!window.__mock_db_treatments_catalog__) {
+            window.__mock_db_treatments_catalog__ = [
+                { id: 'cat-1', nombre: 'Profilaxis Dental Simple', precio_soles: 80.00, precio_dolares: 22.00, categoria: 'Preventiva' },
+                { id: 'cat-2', nombre: 'Curación Resina Compuesta Simple', precio_soles: 120.00, precio_dolares: 32.50, categoria: 'Restauradora' },
+                { id: 'cat-3', nombre: 'Extracción Dental Simple', precio_soles: 100.00, precio_dolares: 27.00, categoria: 'Cirugía' }
+            ];
+        }
+        return window.__mock_db_treatments_catalog__;
+    }
+    const { data, error } = await supabase
+        .from('treatments_catalog')
+        .select('*')
+        .order('nombre', { ascending: true });
+    if (error) throw error;
+    return data;
+}
+
+export async function insertTreatmentInCatalog(treatment) {
+    if (isTestMode()) {
+        window.__mock_db_treatments_catalog__ = window.__mock_db_treatments_catalog__ || [];
+        const newTreatment = { id: 'cat-' + Date.now(), ...treatment };
+        window.__mock_db_treatments_catalog__.push(newTreatment);
+        return newTreatment;
+    }
+    const { data, error } = await supabase
+        .from('treatments_catalog')
+        .insert([treatment])
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+export async function updateTreatmentInCatalog(id, data) {
+    if (isTestMode()) {
+        window.__mock_db_treatments_catalog__ = window.__mock_db_treatments_catalog__ || [];
+        const idx = window.__mock_db_treatments_catalog__.findIndex(t => t.id === id);
+        if (idx !== -1) {
+            window.__mock_db_treatments_catalog__[idx] = { ...window.__mock_db_treatments_catalog__[idx], ...data };
+            return window.__mock_db_treatments_catalog__[idx];
+        }
+        return null;
+    }
+    const { data: updated, error } = await supabase
+        .from('treatments_catalog')
+        .update(data)
+        .eq('id', id)
+        .select()
+        .single();
+    if (error) throw error;
+    return updated;
+}
+
+export async function deleteTreatmentFromCatalog(id) {
+    if (isTestMode()) {
+        window.__mock_db_treatments_catalog__ = window.__mock_db_treatments_catalog__ || [];
+        window.__mock_db_treatments_catalog__ = window.__mock_db_treatments_catalog__.filter(t => t.id !== id);
+        return true;
+    }
+    const { error } = await supabase
+        .from('treatments_catalog')
+        .delete()
+        .eq('id', id);
+    if (error) throw error;
+    return true;
+}
+
+// --- PATIENT TREATMENT PLAN METHODS ---
+export async function getPatientTreatmentPlans(patientId) {
+    if (isTestMode()) {
+        window.__mock_db_patient_treatment_plan__ = window.__mock_db_patient_treatment_plan__ || [];
+        return window.__mock_db_patient_treatment_plan__.filter(p => p.patient_id === patientId);
+    }
+    const { data, error } = await supabase
+        .from('patient_treatment_plan')
+        .select(`
+            *,
+            treatments_catalog:treatment_id (*)
+        `)
+        .eq('patient_id', patientId)
+        .order('created_at', { ascending: true });
+    if (error) throw error;
+    return data;
+}
+
+export async function insertPatientTreatmentPlan(record) {
+    if (isTestMode()) {
+        window.__mock_db_patient_treatment_plan__ = window.__mock_db_patient_treatment_plan__ || [];
+        const catalog = window.__mock_db_treatments_catalog__ || [];
+        const catItem = catalog.find(c => c.id === record.treatment_id) || {};
+        const newRecord = {
+            id: 'plan-' + Date.now(),
+            created_at: new Date().toISOString(),
+            ...record,
+            treatments_catalog: catItem
+        };
+        window.__mock_db_patient_treatment_plan__.push(newRecord);
+        return newRecord;
+    }
+    const { data, error } = await supabase
+        .from('patient_treatment_plan')
+        .insert([record])
+        .select(`
+            *,
+            treatments_catalog:treatment_id (*)
+        `)
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+export async function updatePatientTreatmentPlan(id, data) {
+    if (isTestMode()) {
+        window.__mock_db_patient_treatment_plan__ = window.__mock_db_patient_treatment_plan__ || [];
+        const idx = window.__mock_db_patient_treatment_plan__.findIndex(p => p.id === id);
+        if (idx !== -1) {
+            window.__mock_db_patient_treatment_plan__[idx] = { ...window.__mock_db_patient_treatment_plan__[idx], ...data };
+            return window.__mock_db_patient_treatment_plan__[idx];
+        }
+        return null;
+    }
+    const { data: updated, error } = await supabase
+        .from('patient_treatment_plan')
+        .update(data)
+        .eq('id', id)
+        .select(`
+            *,
+            treatments_catalog:treatment_id (*)
+        `)
+        .single();
+    if (error) throw error;
+    return updated;
+}
+
+export async function deletePatientTreatmentPlan(id) {
+    if (isTestMode()) {
+        window.__mock_db_patient_treatment_plan__ = window.__mock_db_patient_treatment_plan__ || [];
+        window.__mock_db_patient_treatment_plan__ = window.__mock_db_patient_treatment_plan__.filter(p => p.id !== id);
+        return true;
+    }
+    const { error } = await supabase
+        .from('patient_treatment_plan')
+        .delete()
+        .eq('id', id);
+    if (error) throw error;
+    return true;
+}
