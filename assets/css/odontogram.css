@@ -467,3 +467,22 @@
     transform: translate3d(0, 0, 0);
     backface-visibility: hidden;
 }
+
+/* Treatment Plan View Styles */
+#view-treatment-plan .odontogram-canvas {
+    pointer-events: none;
+    opacity: 0.9;
+}
+
+.treatment-plan-split {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+@media (max-width: 1024px) {
+    .treatment-plan-split {
+        grid-template-columns: 1fr;
+    }
+}
