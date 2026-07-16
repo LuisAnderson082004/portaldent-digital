@@ -331,6 +331,13 @@ function getDaySpanish(day) {
 }
 
 function openShiftModal() {
+    // Reset form and select default workdays (Monday-Friday)
+    document.getElementById('shift-form').reset();
+    const defaultDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    document.querySelectorAll('input[name="shift-days"]').forEach(cb => {
+        cb.checked = defaultDays.includes(cb.value);
+    });
+
     const select = document.getElementById('shift-dentist');
     select.innerHTML = '';
 
@@ -360,7 +367,6 @@ function closeShiftModal() {
 document.getElementById('shift-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const dentistId = document.getElementById('shift-dentist').value;
-    const day = document.getElementById('shift-day').value;
     const start = document.getElementById('shift-start').value;
     const end = document.getElementById('shift-end').value;
 
@@ -382,22 +388,42 @@ document.getElementById('shift-form').addEventListener('submit', async (e) => {
         return;
     }
 
-    try {
-        const newShift = {
-            id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : 'shf-' + Date.now(),
-            dentistId,
-            dentistName: dentist.name,
-            day,
-            start,
-            end
-        };
+    const selectedDays = Array.from(document.querySelectorAll('input[name="shift-days"]:checked')).map(cb => cb.value);
+    if (selectedDays.length === 0) {
+        alert("Error: Debe seleccionar al menos un día laboral.");
+        return;
+    }
 
-        const inserted = await insertShiftInDB(newShift);
-        appState.shifts.push(inserted);
+    // Check for duplicate shifts for the selected dentist and days to prevent collisions
+    const duplicateDays = selectedDays.filter(day => 
+        appState.shifts.some(s => s.dentistId === dentistId && s.day === day)
+    );
+    if (duplicateDays.length > 0) {
+        const dayNames = duplicateDays.map(d => getDaySpanish(d)).join(', ');
+        alert(`Conflicto de Horarios: El odontólogo ya cuenta con turnos registrados para los siguientes días: ${dayNames}. Remueva los turnos existentes antes de registrar otros nuevos.`);
+        return;
+    }
+
+    try {
+        // Insert shifts in sequence
+        for (const day of selectedDays) {
+            const newShift = {
+                id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : 'shf-' + Date.now() + Math.random().toString(36).substring(2, 7),
+                dentistId,
+                dentistName: dentist.name,
+                day,
+                start,
+                end
+            };
+
+            const inserted = await insertShiftInDB(newShift);
+            appState.shifts.push(inserted);
+        }
+        
         renderShiftsList();
         closeShiftModal();
     } catch (err) {
-        alert(err.message);
+        alert("Error al registrar los turnos: " + err.message);
     }
 });
 
