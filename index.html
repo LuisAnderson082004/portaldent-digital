@@ -716,6 +716,8 @@
                 <h3 id="appointment-modal-title">Agendar Cita Dental</h3>
                 <span class="close-btn" onclick="closeAppointmentModal()">&times;</span>
             </div>
+            
+            <!-- 1. NEW APPOINTMENT FORM -->
             <form id="appointment-form">
                 <!-- Lock slot info -->
                 <input type="hidden" id="appointment-date">
@@ -769,12 +771,78 @@
                         </div>
                     </div>
                 </div>
+                
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline" id="btn-cancel-appointment" onclick="cancelAppointmentFlow()" style="margin-right: auto; display: none;" class="btn-danger-outline">Eliminar Cita</button>
                     <button type="button" class="btn btn-outline" onclick="closeAppointmentModal()">Cerrar</button>
                     <button type="submit" class="btn btn-primary" id="btn-save-appointment">Confirmar Cita</button>
                 </div>
             </form>
+
+            <!-- 2. OCCUPIED VIEW & RESCHEDULE FLOW -->
+            <div id="occupied-appointment-container" class="hidden">
+                <!-- A. Details Card (Read-Only) -->
+                <div id="occupied-view-details">
+                    <div class="modal-body">
+                        <div class="form-group-info" id="occupied-slot-info" style="background-color: #f1f5f9; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+                            <!-- Time and Date -->
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem;">
+                            <div><strong>Paciente:</strong> <span id="view-appt-patient" style="font-weight: 600;">-</span></div>
+                            <div><strong>Odontólogo:</strong> <span id="view-appt-dentist" style="font-weight: 600;">-</span></div>
+                            <div><strong>Motivo:</strong> <span id="view-appt-reason" style="font-weight: 600;">-</span></div>
+                            <div><strong>Abono de Separación:</strong> <span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Pagado (S/ 50.00)</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger-outline" onclick="cancelAppointmentFlow()" style="margin-right: auto;"><i class="fa-solid fa-trash-can"></i> Eliminar Cita</button>
+                        <button type="button" class="btn btn-primary" onclick="showRescheduleMode()"><i class="fa-solid fa-calendar-days"></i> Reprogramar</button>
+                        <button type="button" class="btn btn-outline" onclick="closeAppointmentModal()">Cerrar</button>
+                    </div>
+                </div>
+
+                <!-- B. Reschedule Fields Form -->
+                <form id="reschedule-form" class="hidden">
+                    <div class="modal-body">
+                        <h4 style="margin-bottom: 15px; color: #1e3a8a;"><i class="fa-solid fa-calendar-plus"></i> Seleccionar Nuevo Horario</h4>
+                        
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label for="reschedule-date" style="font-weight: 600;">Nueva Fecha *</label>
+                                <input type="date" id="reschedule-date" class="form-control" required>
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="reschedule-time" style="font-weight: 600;">Nuevo Horario *</label>
+                                <select id="reschedule-time" class="form-control" required>
+                                    <option value="09:00">09:00 AM - 10:00 AM</option>
+                                    <option value="10:00">10:00 AM - 11:00 AM</option>
+                                    <option value="11:00">11:00 AM - 12:00 PM</option>
+                                    <option value="12:00">12:00 PM - 01:00 PM</option>
+                                    <option value="13:00">01:00 PM - 02:00 PM</option>
+                                    <option value="14:00">02:00 PM - 03:00 PM</option>
+                                    <option value="15:00">03:00 PM - 04:00 PM</option>
+                                    <option value="16:00">04:00 PM - 05:00 PM</option>
+                                    <option value="17:00">05:00 PM - 06:00 PM</option>
+                                    <option value="18:00">06:00 PM - 07:00 PM</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mt-2">
+                            <label for="reschedule-dentist" style="font-weight: 600;">Odontólogo Tratante *</label>
+                            <select id="reschedule-dentist" class="form-control" required>
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline" onclick="showOccupiedViewMode()"><i class="fa-solid fa-arrow-left"></i> Volver</button>
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-calendar-check"></i> Confirmar Cambio</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
