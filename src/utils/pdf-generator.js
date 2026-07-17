@@ -285,7 +285,7 @@ export function exportPatientPDFDirect(patientId, state) {
         </head>
         <body>
             <div class="print-header">
-                <div class="clinic-logo">PortalDent <span>Digital</span></div>
+                <div class="clinic-logo">Portal <span>Dentistas</span></div>
                 <div class="doc-title">
                     <h1>Resumen de Historial Clínico</h1>
                     <p>Documento Oficial Firmado Electrónicamente</p>
@@ -323,7 +323,7 @@ export function exportPatientPDFDirect(patientId, state) {
 
             <div class="footer-container">
                 <div>
-                    <p style="font-size: 10px; color: #64748b; margin: 0;">PortalDent Digital Software, version 2.0</p>
+                    <p style="font-size: 10px; color: #64748b; margin: 0;">Portal Dentistas Software, version 2.0</p>
                     <p style="font-size: 10px; color: #64748b; margin: 2px 0 0 0;">ID de Seguridad Documentaria: SEC-${Date.now().toString().slice(-8)}</p>
                 </div>
                 
@@ -332,7 +332,7 @@ export function exportPatientPDFDirect(patientId, state) {
                 </div>
 
                 <div class="clinic-seal">
-                    <div class="seal-title">PORTALDENT</div>
+                    <div class="seal-title">PORTAL DENTISTAS</div>
                     <div style="font-size: 7px; margin: 2px 0;">SELLO DIGITAL</div>
                     <div style="font-size: 6px;">VALIDEZ LEGAL</div>
                     <div style="font-size: 5px; color: #64748b; margin-top: 4px;">COD-948201</div>
