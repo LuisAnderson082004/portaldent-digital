@@ -1040,7 +1040,7 @@ function openReminderTemplateModal(apptId) {
 
     const displayHour = parseInt(appt.time.split(':')[0]);
     const formattedTime = `${displayHour > 12 ? displayHour - 12 : displayHour}:00 ${displayHour >= 12 ? 'PM' : 'AM'}`;
-    const templateText = `Estimado(a) ${appt.patientName}, le recordamos su cita dental programada para el día de HOY a las ${formattedTime} con el especialista ${appt.dentistName} en la Clínica PortalDent Digital. Agradecemos su puntualidad.`;
+    const templateText = `Estimado(a) ${appt.patientName}, le recordamos su cita dental programada para el día de HOY a las ${formattedTime} con el especialista ${appt.dentistName} en la Clínica Portal Dentistas. Agradecemos su puntualidad.`;
 
     document.getElementById('reminder-template-text').innerText = templateText;
     document.getElementById('reminder-modal').classList.add('active');
