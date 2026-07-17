@@ -189,7 +189,6 @@
                                     <th>DNI</th>
                                     <th>Hora</th>
                                     <th>Odontólogo</th>
-                                    <th>Abono (S/ 50.00)</th>
                                     <th>Estado de Recordatorio</th>
                                     <th>Acción</th>
                                 </tr>
@@ -270,8 +269,12 @@
                     <!-- Right column: Interactive Odontogram Chart -->
                     <div class="ehr-main">
                         <div class="card odontogram-container-card">
-                            <div class="odontogram-header">
-                                <h3>Odontograma de Admisión (Inicial)</h3>
+                            <div class="odontogram-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px;">
+                                <h3 id="odontogram-header-title" style="margin: 0;">Odontograma de Admisión (Inicial)</h3>
+                                <div class="btn-group" id="odontogram-mode-selector" style="display: flex; gap: 5px; background: #e2e8f0; padding: 4px; border-radius: 6px;">
+                                    <button type="button" class="btn btn-sm" id="mode-toggle-baseline" onclick="setOdontogramMode('baseline')" style="padding: 4px 10px; font-size: 0.85rem; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; transition: background var(--transition-fast), color var(--transition-fast);">Inicial</button>
+                                    <button type="button" class="btn btn-sm" id="mode-toggle-evolution" onclick="setOdontogramMode('evolution')" style="padding: 4px 10px; font-size: 0.85rem; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; transition: background var(--transition-fast), color var(--transition-fast);">Evolución</button>
+                                </div>
                             </div>
 
                             <div class="odontogram-help alert alert-info py-2 my-2">
@@ -710,7 +713,7 @@
     <div id="appointment-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Agendar Cita Dental</h3>
+                <h3 id="appointment-modal-title">Agendar Cita Dental</h3>
                 <span class="close-btn" onclick="closeAppointmentModal()">&times;</span>
             </div>
             <form id="appointment-form">
