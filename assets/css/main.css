@@ -34,6 +34,7 @@ body {
     background-color: var(--bg-light);
     overflow-x: hidden;
     height: 100vh;
+    zoom: 0.9;
 }
 
 /* Helper Utilities */
