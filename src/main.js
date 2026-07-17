@@ -778,10 +778,7 @@ function handleSlotClick(date, time, dentistId, appointment) {
     
     const displayHour = parseInt(time.split(':')[0]);
     const displayFormatted = `${displayHour > 12 ? displayHour - 12 : displayHour}:00 ${displayHour >= 12 ? 'PM' : 'AM'} - ${displayHour + 1 > 12 ? displayHour + 1 - 12 : displayHour + 1}:00 ${displayHour + 1 >= 12 ? 'PM' : 'AM'}`;
-    document.getElementById('appointment-slot-info').innerHTML = `
-        <strong>Fecha:</strong> ${date} | <strong>Horario:</strong> ${displayFormatted}
-    `;
-
+    
     const dentistSelect = document.getElementById('appointment-dentist');
     dentistSelect.innerHTML = '';
     appState.users.filter(u => u.role === 'dentist').forEach(d => {
@@ -792,41 +789,117 @@ function handleSlotClick(date, time, dentistId, appointment) {
     });
     dentistSelect.value = dentistId;
 
-    document.getElementById('appointment-patient-search').value = '';
-    const patientDropdown = document.getElementById('appointment-patient');
-    patientDropdown.innerHTML = '';
-    patientDropdown.style.display = 'none';
-
-    const cancelBtn = document.getElementById('btn-cancel-appointment');
     const modalTitle = document.getElementById('appointment-modal-title');
-    const saveBtn = document.getElementById('btn-save-appointment');
+    const appointmentForm = document.getElementById('appointment-form');
+    const occupiedContainer = document.getElementById('occupied-appointment-container');
 
     if (appointment) {
-        if (modalTitle) modalTitle.innerText = "Reprogramar / Eliminar Cita";
-        if (saveBtn) saveBtn.innerText = "Reprogramar Cita";
-        cancelBtn.style.display = 'inline-flex';
-        const opt = document.createElement('option');
-        opt.value = appointment.patientId;
-        opt.innerText = `${appointment.patientName} (${appointment.patientDni})`;
-        opt.selected = true;
-        patientDropdown.appendChild(opt);
-        patientDropdown.style.display = 'block';
-        
-        document.getElementById('appointment-patient-search').value = appointment.patientName;
-        document.getElementById('appointment-reason').value = appointment.reason;
-        document.getElementById('appointment-deposit').checked = appointment.depositPaid;
+        if (modalTitle) modalTitle.innerText = "Detalle de Cita";
+        if (appointmentForm) appointmentForm.classList.add('hidden');
+        if (occupiedContainer) occupiedContainer.classList.remove('hidden');
+
+        document.getElementById('occupied-slot-info').innerHTML = `
+            <strong>Fecha:</strong> ${date} | <strong>Horario:</strong> ${displayFormatted}
+        `;
+        document.getElementById('view-appt-patient').innerText = appointment.patientName + ` (DNI: ${appointment.patientDni})`;
+        document.getElementById('view-appt-dentist').innerText = appointment.dentistName;
+        document.getElementById('view-appt-reason').innerText = appointment.reason;
+
+        showOccupiedViewMode();
     } else {
         if (modalTitle) modalTitle.innerText = "Agendar Cita Dental";
-        if (saveBtn) saveBtn.innerText = "Confirmar Cita";
-        cancelBtn.style.display = 'none';
+        if (appointmentForm) appointmentForm.classList.remove('hidden');
+        if (occupiedContainer) occupiedContainer.classList.add('hidden');
+
+        document.getElementById('appointment-slot-info').innerHTML = `
+            <strong>Fecha:</strong> ${date} | <strong>Horario:</strong> ${displayFormatted}
+        `;
+
+        document.getElementById('appointment-patient-search').value = '';
+        const patientDropdown = document.getElementById('appointment-patient');
+        if (patientDropdown) {
+            patientDropdown.innerHTML = '';
+            patientDropdown.style.display = 'none';
+        }
         document.getElementById('appointment-reason').value = '';
         document.getElementById('appointment-deposit').checked = false;
+        
+        toggleDepositValidation();
+        document.getElementById('deposit-error-msg').classList.add('hidden');
     }
 
-    toggleDepositValidation();
-    document.getElementById('deposit-error-msg').classList.add('hidden');
     document.getElementById('appointment-modal').classList.add('active');
 }
+
+function showRescheduleMode() {
+    const id = document.getElementById('appointment-id-field').value;
+    const appt = appState.appointments.find(a => a.id === id);
+    if (!appt) return;
+
+    const details = document.getElementById('occupied-view-details');
+    const form = document.getElementById('reschedule-form');
+    
+    if (details) details.classList.add('hidden');
+    if (form) form.classList.remove('hidden');
+
+    const modalTitle = document.getElementById('appointment-modal-title');
+    if (modalTitle) modalTitle.innerText = "Reprogramar Cita";
+
+    // Set form values
+    document.getElementById('reschedule-date').value = appt.date;
+    document.getElementById('reschedule-time').value = appt.time;
+
+    // Populate dentist select
+    const dentistSelect = document.getElementById('reschedule-dentist');
+    dentistSelect.innerHTML = '';
+    appState.users.filter(u => u.role === 'dentist').forEach(d => {
+        const option = document.createElement('option');
+        option.value = d.id;
+        option.innerText = d.name;
+        dentistSelect.appendChild(option);
+    });
+    dentistSelect.value = appt.dentistId;
+}
+
+function showOccupiedViewMode() {
+    const details = document.getElementById('occupied-view-details');
+    const form = document.getElementById('reschedule-form');
+    
+    if (details) details.classList.remove('hidden');
+    if (form) form.classList.add('hidden');
+
+    const modalTitle = document.getElementById('appointment-modal-title');
+    if (modalTitle) modalTitle.innerText = "Detalle de Cita";
+}
+
+document.getElementById('reschedule-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('appointment-id-field').value;
+    if (!id) return;
+    
+    const date = document.getElementById('reschedule-date').value;
+    const time = document.getElementById('reschedule-time').value;
+    const dentistId = document.getElementById('reschedule-dentist').value;
+    
+    const appt = appState.appointments.find(a => a.id === id);
+    if (!appt) return;
+
+    try {
+        await saveAppointment({
+            id,
+            patientId: appt.patientId,
+            reason: appt.reason,
+            dentistId,
+            depositPaid: true, // Keep payment credit
+            date,
+            time
+        }, appState, appState.systemTime);
+        loadCalendar();
+        closeAppointmentModal();
+    } catch (err) {
+        alert(err.message);
+    }
+});
 
 function searchPatientForAppointment() {
     const query = document.getElementById('appointment-patient-search').value.toLowerCase().trim();
@@ -1883,6 +1956,8 @@ window.toggleTreatmentPlanStatus = toggleTreatmentPlanStatus;
 window.deleteTreatmentPlanItem = deleteTreatmentPlanItem;
 window.saveBudgetDiscounts = saveBudgetDiscounts;
 window.recalculateBudgetRow = recalculateBudgetRow;
+window.showRescheduleMode = showRescheduleMode;
+window.showOccupiedViewMode = showOccupiedViewMode;
 
 // Application Initialization Bootstrap
 async function bootstrap() {
