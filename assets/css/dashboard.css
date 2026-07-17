@@ -3,10 +3,13 @@
 #main-workspace {
     width: 100vw;
     height: 100vh;
-    display: grid;
     grid-template-columns: 260px 1fr;
     overflow: hidden;
     transition: grid-template-columns var(--transition-normal);
+}
+
+#main-workspace.active {
+    display: grid;
 }
 
 #main-workspace.collapsed-sidebar {
