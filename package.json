@@ -1,7 +1,7 @@
 {
   "name": "portaldent-digital",
-  "version": "1.0.0",
-  "description": "Dental Clinic Operations and Clinical Management Platform",
+  "version": "1.0.1",
+  "description": "Portal Dentistas - Dental Clinic Management Platform",
   "main": "index.html",
   "scripts": {},
   "dependencies": {}
