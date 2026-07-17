@@ -1774,8 +1774,16 @@ document.getElementById('odontogram-finding-form').addEventListener('submit', as
 });
 
 function exportPatientPDF() {
-    const patientId = document.getElementById('ehr-patient-select').value;
-    if (!patientId) return;
+    const isActiveBudget = document.getElementById('view-budget')?.classList.contains('active');
+    const budgetPatientId = document.getElementById('budget-patient-select')?.value;
+    const ehrPatientId = document.getElementById('ehr-patient-select')?.value;
+    
+    const patientId = isActiveBudget ? (budgetPatientId || ehrPatientId) : (ehrPatientId || budgetPatientId);
+    
+    if (!patientId) {
+        alert("Debe seleccionar un paciente primero.");
+        return;
+    }
     exportPatientPDFDirect(patientId, appState);
 }
 
@@ -2365,6 +2373,14 @@ function clearBudgetPanel() {
     document.getElementById('budget-deposit').innerText = 'S/ 0.00';
     document.getElementById('budget-final-total').innerText = 'S/ 0.00';
     document.getElementById('budget-deposit-notice').classList.add('hidden');
+    
+    // Reset export controls
+    const pdfBtn = document.getElementById('btn-export-pdf');
+    const helpTxt = document.getElementById('export-help-text');
+    if (pdfBtn && helpTxt) {
+        pdfBtn.disabled = true;
+        helpTxt.classList.remove('hidden');
+    }
 }
 
 function initializeBudgetView() {
@@ -2393,6 +2409,19 @@ async function loadBudgetForPatient(patientId) {
 
     // Show patient info
     document.getElementById('budget-patient-name-header').innerText = `${patient.firstname} ${patient.lastname} (DNI: ${patient.dni})`;
+
+    // Update export PDF button and help text based on evolution notes
+    const pdfBtn = document.getElementById('btn-export-pdf');
+    const helpTxt = document.getElementById('export-help-text');
+    if (pdfBtn && helpTxt) {
+        if (patient.evolutionNotes && patient.evolutionNotes.length > 0) {
+            pdfBtn.disabled = false;
+            helpTxt.classList.add('hidden');
+        } else {
+            pdfBtn.disabled = true;
+            helpTxt.classList.remove('hidden');
+        }
+    }
 
     // Load treatment plans
     let plans = [];
