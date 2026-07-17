@@ -798,7 +798,12 @@ function handleSlotClick(date, time, dentistId, appointment) {
     patientDropdown.style.display = 'none';
 
     const cancelBtn = document.getElementById('btn-cancel-appointment');
+    const modalTitle = document.getElementById('appointment-modal-title');
+    const saveBtn = document.getElementById('btn-save-appointment');
+
     if (appointment) {
+        if (modalTitle) modalTitle.innerText = "Reprogramar / Eliminar Cita";
+        if (saveBtn) saveBtn.innerText = "Reprogramar Cita";
         cancelBtn.style.display = 'inline-flex';
         const opt = document.createElement('option');
         opt.value = appointment.patientId;
@@ -811,6 +816,8 @@ function handleSlotClick(date, time, dentistId, appointment) {
         document.getElementById('appointment-reason').value = appointment.reason;
         document.getElementById('appointment-deposit').checked = appointment.depositPaid;
     } else {
+        if (modalTitle) modalTitle.innerText = "Agendar Cita Dental";
+        if (saveBtn) saveBtn.innerText = "Confirmar Cita";
         cancelBtn.style.display = 'none';
         document.getElementById('appointment-reason').value = '';
         document.getElementById('appointment-deposit').checked = false;
@@ -924,7 +931,7 @@ function renderRemindersList() {
     const todayAppointments = appState.appointments.filter(a => a.date === todayStr);
 
     if (todayAppointments.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No hay citas programadas para el día de hoy (${formatDateSpanish(todayStr)}).</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No hay citas programadas para el día de hoy (${formatDateSpanish(todayStr)}).</td></tr>`;
         return;
     }
 
@@ -935,7 +942,6 @@ function renderRemindersList() {
             <td>${appt.patientDni}</td>
             <td><strong>${appt.time}</strong></td>
             <td>${appt.dentistName}</td>
-            <td>S/ ${appt.depositAmount.toFixed(2)}</td>
             <td>
                 <span class="badge ${appt.reminderSent ? 'badge-success' : 'badge-danger'}">
                     ${appt.reminderSent ? 'Recordatorio Enviado' : 'Pendiente'}
@@ -1056,7 +1062,7 @@ async function loadEHRForPatient() {
 
     renderEvolutionNotesList(patient);
     drawOdontogramTeethLayout(patient);
-    updateOdontogramControls(patient);
+    setOdontogramMode('baseline');
 
     const pdfBtn = document.getElementById('btn-export-pdf');
     const helpTxt = document.getElementById('export-help-text');
@@ -1640,9 +1646,51 @@ function getSurfaceNameSpanish(surf) {
 }
 
 function setOdontogramMode(mode) {
-    currentOdontogramMode = 'baseline';
+    currentOdontogramMode = mode;
     selectedToothId = null;
     selectedSurfaceName = null;
+
+    const headerTitle = document.getElementById('odontogram-header-title');
+    const helpText = document.getElementById('odontogram-help-text');
+    const btnBaseline = document.getElementById('mode-toggle-baseline');
+    const btnEvolution = document.getElementById('mode-toggle-evolution');
+    const saveBaselineBtn = document.getElementById('btn-save-baseline');
+    const indicator = document.getElementById('baseline-saved-indicator');
+
+    const patientId = document.getElementById('ehr-patient-select').value;
+    const patient = appState.patients.find(p => p.id === patientId);
+
+    if (mode === 'baseline') {
+        if (headerTitle) headerTitle.innerText = "Odontograma de Admisión (Inicial)";
+        if (helpText) helpText.innerText = "Configure el estado dental de ingreso del paciente. Al congelar y guardar, este registro inicial se volverá inalterable legalmente.";
+        if (btnBaseline) {
+            btnBaseline.style.backgroundColor = '#2563eb';
+            btnBaseline.style.color = '#ffffff';
+        }
+        if (btnEvolution) {
+            btnEvolution.style.backgroundColor = 'transparent';
+            btnEvolution.style.color = '#475569';
+        }
+        if (patient) {
+            updateOdontogramControls(patient);
+        } else {
+            if (saveBaselineBtn) saveBaselineBtn.classList.add('hidden');
+            if (indicator) indicator.classList.add('hidden');
+        }
+    } else {
+        if (headerTitle) headerTitle.innerText = "Odontograma de Evolución Clínica";
+        if (helpText) helpText.innerText = "Registre nuevos hallazgos o tratamientos realizados durante la evolución clínica del paciente.";
+        if (btnBaseline) {
+            btnBaseline.style.backgroundColor = 'transparent';
+            btnBaseline.style.color = '#475569';
+        }
+        if (btnEvolution) {
+            btnEvolution.style.backgroundColor = '#2563eb';
+            btnEvolution.style.color = '#ffffff';
+        }
+        if (saveBaselineBtn) saveBaselineBtn.classList.add('hidden');
+        if (indicator) indicator.classList.add('hidden');
+    }
 }
 
 function updateOdontogramControls(patient) {
