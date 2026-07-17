@@ -314,24 +314,15 @@
                             </div>
 
                             <!-- Action Bar / Saving baseline / Adding treatment -->
-                            <div class="odontogram-footer mt-4">
+                            <div class="odontogram-footer mt-4" style="display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap;">
                                 <div id="baseline-actions">
                                     <button class="btn btn-warning" id="btn-save-baseline" onclick="saveBaselineState()"><i class="fa-solid fa-lock"></i> Congelar & Guardar Estado Inicial</button>
                                     <span id="baseline-saved-indicator" class="text-success hidden"><i class="fa-solid fa-circle-check"></i> Estado Inicial Legal Congelado</span>
                                 </div>
-
-                            </div>
-                        </div>
-
-                        <!-- EXPORT ENGINE CARD -->
-                        <div class="card export-card mt-3">
-                            <div class="card-header-flex">
-                                <h3>Exportación de Registro Clínico</h3>
-                                <button id="btn-export-pdf" class="btn btn-secondary" onclick="exportPatientPDF()" disabled>
-                                    <i class="fa-solid fa-file-pdf"></i> Exportar Resumen Clínico (PDF)
+                                <button type="button" class="btn btn-primary" onclick="switchView('treatment-plan')">
+                                    Ir al Plan de Tratamiento <i class="fa-solid fa-arrow-right" style="margin-left: 5px;"></i>
                                 </button>
                             </div>
-                            <p class="text-muted text-sm mt-1" id="export-help-text">La exportación en PDF se activará automáticamente cuando el paciente cuente con al menos una nota de evolución clínica guardada.</p>
                         </div>
                     </div>
                 </div>
@@ -463,6 +454,12 @@
                             </table>
                         </div>
 
+                        <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
+                            <button type="button" class="btn btn-primary" onclick="switchView('budget')">
+                                Ir a Presupuesto & Descuentos <i class="fa-solid fa-arrow-right" style="margin-left: 5px;"></i>
+                            </button>
+                        </div>
+
                         <!-- Summary Cards (Hidden clinically, shown in Budget view) -->
                         <div class="plan-summaries mt-3" style="background: #f1f5f9; padding: 15px; border-radius: 8px; display: none;">
                             <div>
@@ -484,7 +481,7 @@
                     <button class="btn btn-primary" onclick="openTarifarioModal()"><i class="fa-solid fa-plus"></i> Nuevo Procedimiento</button>
                 </div>
 
-                <div class="card card-table">
+                <div class="card card-table" style="max-height: calc(100vh - 220px); overflow-y: auto;">
                     <div class="table-responsive">
                         <table class="table">
                             <thead>
@@ -556,29 +553,42 @@
                     </div>
 
                     <!-- RIGHT COLUMN: Balance sheet, advances, and totals -->
-                    <div class="card" style="padding: 20px;">
-                        <h4 style="margin-bottom: 15px;"><i class="fa-solid fa-file-invoice-dollar"></i> Resumen de Cuenta</h4>
-                        <div style="display: flex; flex-direction: column; gap: 15px; background-color: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
-                                <span style="font-weight: 500; color: #475569;">Subtotal Base:</span>
-                                <span id="budget-subtotal" style="font-weight: 600; color: #1e293b;">S/ 0.00</span>
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <div class="card" style="padding: 20px;">
+                            <h4 style="margin-bottom: 15px;"><i class="fa-solid fa-file-invoice-dollar"></i> Resumen de Cuenta</h4>
+                            <div style="display: flex; flex-direction: column; gap: 15px; background-color: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+                                    <span style="font-weight: 500; color: #475569;">Subtotal Base:</span>
+                                    <span id="budget-subtotal" style="font-weight: 600; color: #1e293b;">S/ 0.00</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+                                    <span style="font-weight: 500; color: #e11d48;">(-) Descuento de Procedimientos:</span>
+                                    <span id="budget-total-discount" style="font-weight: 600; color: #e11d48;">S/ 0.00</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+                                    <span style="font-weight: 500; color: #d97706;">(-) Abono Separación Cita (Adelantado):</span>
+                                    <span id="budget-deposit" style="font-weight: 600; color: #d97706;">S/ 0.00</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 5px;">
+                                    <span style="font-size: 1.2rem; font-weight: 700; color: #0f172a;">Total Neto a Pagar:</span>
+                                    <span id="budget-final-total" style="font-size: 1.3rem; font-weight: 800; color: #16a34a;">S/ 0.00</span>
+                                </div>
                             </div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
-                                <span style="font-weight: 500; color: #e11d48;">(-) Descuento de Procedimientos:</span>
-                                <span id="budget-total-discount" style="font-weight: 600; color: #e11d48;">S/ 0.00</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
-                                <span style="font-weight: 500; color: #d97706;">(-) Abono Separación Cita (Adelantado):</span>
-                                <span id="budget-deposit" style="font-weight: 600; color: #d97706;">S/ 0.00</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 5px;">
-                                <span style="font-size: 1.2rem; font-weight: 700; color: #0f172a;">Total Neto a Pagar:</span>
-                                <span id="budget-final-total" style="font-size: 1.3rem; font-weight: 800; color: #16a34a;">S/ 0.00</span>
+
+                            <div id="budget-deposit-notice" class="alert alert-success mt-3 hidden">
+                                <i class="fa-solid fa-circle-info"></i> Se ha detectado un abono de <strong>S/ 50.00</strong> por separación previa de cita de este paciente, el cual se ha restado del total final.
                             </div>
                         </div>
 
-                        <div id="budget-deposit-notice" class="alert alert-success mt-3 hidden">
-                            <i class="fa-solid fa-circle-info"></i> Se ha detectado un abono de <strong>S/ 50.00</strong> por separación previa de cita de este paciente, el cual se ha restado del total final.
+                        <!-- EXPORT ENGINE CARD (Moved from Odontogram) -->
+                        <div class="card export-card" style="padding: 20px;">
+                            <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap;">
+                                <h4 style="margin: 0;"><i class="fa-solid fa-file-invoice"></i> Exportar Registro</h4>
+                                <button id="btn-export-pdf" class="btn btn-secondary btn-sm" onclick="exportPatientPDF()" disabled>
+                                    <i class="fa-solid fa-file-pdf"></i> Exportar Resumen (PDF)
+                                </button>
+                            </div>
+                            <p class="text-muted text-sm mt-2" id="export-help-text">La exportación se activará automáticamente cuando el paciente seleccionado cuente con al menos una nota de evolución clínica guardada.</p>
                         </div>
                     </div>
                 </div>
