@@ -75,6 +75,7 @@
                     <li id="menu-patients" class="nav-item active"><a href="#" onclick="switchView('patients')"><i class="fa-solid fa-hospital-user"></i> Pacientes</a></li>
                     <li id="menu-calendar" class="nav-item"><a href="#" onclick="switchView('calendar')"><i class="fa-solid fa-calendar-days"></i> Agenda Dental</a></li>
                     <li id="menu-reminders" class="nav-item"><a href="#" onclick="switchView('reminders')"><i class="fa-solid fa-bell"></i> Recordatorios</a></li>
+                    <li id="menu-budget" class="nav-item"><a href="#" onclick="switchView('budget')"><i class="fa-solid fa-receipt"></i> Presupuesto & Descuentos</a></li>
                     
                     <li class="menu-header clinical-only">Clínica</li>
                     <li id="menu-odontogram" class="nav-item clinical-only"><a href="#" onclick="switchView('odontogram')"><i class="fa-solid fa-teeth"></i> Odontograma & EHR</a></li>
@@ -452,7 +453,6 @@
                                     <tr>
                                         <th>Procedimiento</th>
                                         <th>Pieza</th>
-                                        <th>Costo (S/)</th>
                                         <th>Estado</th>
                                         <th>Acciones</th>
                                     </tr>
@@ -463,8 +463,8 @@
                             </table>
                         </div>
 
-                        <!-- Summary Cards -->
-                        <div class="plan-summaries mt-3" style="background: #f1f5f9; padding: 15px; border-radius: 8px;">
+                        <!-- Summary Cards (Hidden clinically, shown in Budget view) -->
+                        <div class="plan-summaries mt-3" style="background: #f1f5f9; padding: 15px; border-radius: 8px; display: none;">
                             <div>
                                 <h5 style="margin: 0 0 5px 0; color: #475569;">Total en Soles (S/)</h5>
                                 <div style="font-size: 0.9rem; font-weight: 600; display: flex; gap: 20px;">
@@ -499,6 +499,87 @@
                                 <!-- Populated dynamically -->
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2.9 BUDGET & DISCOUNTS VIEW -->
+            <section id="view-budget" class="content-section">
+                <div class="action-bar" style="margin-bottom: 20px;">
+                    <h3>Presupuesto y Finanzas</h3>
+                    <div style="font-weight: 600;">
+                        <span>Paciente Seleccionado: </span>
+                        <span id="budget-patient-name-header" class="text-primary">-</span>
+                    </div>
+                </div>
+
+                <div class="card patient-selector-card" style="margin-bottom: 20px; max-width: 450px; padding: 15px;">
+                    <label for="budget-patient-search"><strong>Buscar Paciente:</strong></label>
+                    <div class="searchable-select">
+                        <input type="text" id="budget-patient-search" class="form-control" placeholder="Buscar por Nombre o DNI..." autocomplete="off">
+                        <button type="button" id="budget-patient-search-clear" class="search-clear-btn hidden">&times;</button>
+                        <div id="budget-patient-search-results" class="search-results-dropdown hidden"></div>
+                    </div>
+                    <select id="budget-patient-select" class="hidden">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <div class="budget-content-grid" style="display: grid; grid-template-columns: 1.2fr 1.0fr; gap: 20px; align-items: start;">
+                    <!-- LEFT COLUMN: Treatments and prices with discount input -->
+                    <div class="card" style="padding: 20px;">
+                        <h4 style="margin-bottom: 15px;"><i class="fa-solid fa-calculator"></i> Detalle de Procedimientos y Descuentos</h4>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Procedimiento</th>
+                                        <th>Pieza</th>
+                                        <th>Costo Base (S/)</th>
+                                        <th style="width: 120px;">Descuento (%)</th>
+                                        <th>Descuento (S/)</th>
+                                        <th>Precio Final (S/)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="budget-table-body">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            Seleccione un paciente para cargar su presupuesto.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="margin-top: 15px; display: flex; justify-content: flex-end;">
+                            <button type="button" class="btn btn-primary" id="btn-save-budget-discounts"><i class="fa-solid fa-floppy-disk"></i> Guardar Descuentos</button>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN: Balance sheet, advances, and totals -->
+                    <div class="card" style="padding: 20px;">
+                        <h4 style="margin-bottom: 15px;"><i class="fa-solid fa-file-invoice-dollar"></i> Resumen de Cuenta</h4>
+                        <div style="display: flex; flex-direction: column; gap: 15px; background-color: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+                                <span style="font-weight: 500; color: #475569;">Subtotal Base:</span>
+                                <span id="budget-subtotal" style="font-weight: 600; color: #1e293b;">S/ 0.00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+                                <span style="font-weight: 500; color: #e11d48;">(-) Descuento de Procedimientos:</span>
+                                <span id="budget-total-discount" style="font-weight: 600; color: #e11d48;">S/ 0.00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+                                <span style="font-weight: 500; color: #d97706;">(-) Abono Separación Cita (Adelantado):</span>
+                                <span id="budget-deposit" style="font-weight: 600; color: #d97706;">S/ 0.00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 5px;">
+                                <span style="font-size: 1.2rem; font-weight: 700; color: #0f172a;">Total Neto a Pagar:</span>
+                                <span id="budget-final-total" style="font-size: 1.3rem; font-weight: 800; color: #16a34a;">S/ 0.00</span>
+                            </div>
+                        </div>
+
+                        <div id="budget-deposit-notice" class="alert alert-success mt-3 hidden">
+                            <i class="fa-solid fa-circle-info"></i> Se ha detectado un abono de <strong>S/ 50.00</strong> por separación previa de cita de este paciente, el cual se ha restado del total final.
+                        </div>
                     </div>
                 </div>
             </section>
