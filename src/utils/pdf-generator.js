@@ -373,3 +373,316 @@ function getTreatmentNameSpanishPrint(type) {
         default: return type;
     }
 }
+
+export function printBudgetSheet(patientId, state) {
+    const patient = state.patients.find(p => p.id === patientId);
+    if (!patient) return;
+
+    // Get rows from DOM to capture live values (including unsaved discount changes)
+    const rows = [];
+    const tableRows = document.querySelectorAll('#budget-table-body tr');
+    tableRows.forEach(tr => {
+        if (!tr.dataset.basePrice) return;
+        const name = tr.cells[0].innerText;
+        const tooth = tr.cells[1].innerText;
+        const basePrice = parseFloat(tr.dataset.basePrice);
+        const input = tr.querySelector('.budget-discount-input');
+        const discountPercent = input ? (parseFloat(input.value) || 0) : 0;
+        const discountAmount = basePrice * (discountPercent / 100);
+        const finalPrice = Math.max(0, basePrice - discountAmount);
+        
+        rows.push({
+            name,
+            tooth,
+            basePrice,
+            discountPercent,
+            finalPrice
+        });
+    });
+
+    const hasDeposit = state.appointments.some(appt => appt.patientId === patientId && appt.depositPaid);
+    const depositAmount = hasDeposit ? 50.00 : 0.00;
+    
+    let subtotal = 0;
+    rows.forEach(r => subtotal += r.finalPrice);
+    const finalTotal = Math.max(0, subtotal - depositAmount);
+
+    const now = state.systemTime || new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    const dateFormatted = `${day}/${month}/${year}`;
+
+    // Try to get a dentist name from appointments or local state
+    const dentistAppt = state.appointments.find(a => a.patientId === patientId);
+    const dentistName = dentistAppt ? dentistAppt.dentistName : (state.currentUser && state.currentUser.role === 'dentist' ? state.currentUser.name : '');
+
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'fixed';
+    printFrame.style.right = '0';
+    printFrame.style.bottom = '0';
+    printFrame.style.width = '0';
+    printFrame.style.height = '0';
+    printFrame.style.border = '0';
+    document.body.appendChild(printFrame);
+
+    const doc = printFrame.contentWindow.document;
+    doc.write(`
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <title>Hoja de Presupuesto - ${patient.firstname} ${patient.lastname}</title>
+            <style>
+                @page {
+                    size: A4;
+                    margin: 15mm;
+                }
+                body {
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    color: #1c1a17;
+                    background-color: #ffffff;
+                    margin: 0;
+                    padding: 0;
+                    font-size: 13px;
+                    line-height: 1.4;
+                }
+                .budget-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    border-bottom: 2px solid #e2d7be;
+                    padding-bottom: 15px;
+                    margin-bottom: 30px;
+                }
+                .logo-container {
+                    display: flex;
+                    align-items: center;
+                    gap: 15px;
+                }
+                .logo-img {
+                    height: 70px;
+                    width: auto;
+                    border-radius: 8px;
+                }
+                .brand-info h2 {
+                    margin: 0;
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: #1c1a17;
+                }
+                .brand-info p {
+                    margin: 2px 0 0 0;
+                    font-size: 10px;
+                    color: #6b6355;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                .title-container {
+                    text-align: right;
+                }
+                .title-container h1 {
+                    margin: 0;
+                    font-size: 22px;
+                    font-weight: 300;
+                    color: #1b4332; /* elegant clinic green */
+                    font-family: Georgia, serif;
+                }
+                .title-container h1 span {
+                    font-weight: 700;
+                    color: #cbb27a; /* elegant clinic gold */
+                    display: block;
+                    font-size: 16px;
+                    font-family: inherit;
+                    margin-top: 2px;
+                }
+                .date-box {
+                    font-size: 12px;
+                    font-weight: bold;
+                    margin-top: 10px;
+                    color: #4a453e;
+                }
+                
+                .details-grid {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    margin-bottom: 35px;
+                    font-size: 13px;
+                }
+                .detail-row {
+                    display: flex;
+                    align-items: center;
+                }
+                .detail-label {
+                    font-weight: bold;
+                    color: #4a453e;
+                    width: 180px;
+                    text-transform: uppercase;
+                    font-size: 11px;
+                    letter-spacing: 0.5px;
+                }
+                .detail-value {
+                    flex-grow: 1;
+                    border-bottom: 1px dotted #ab8f51;
+                    padding-bottom: 2px;
+                    font-weight: 600;
+                }
+
+                .budget-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 35px;
+                }
+                .budget-table th {
+                    border: 1.5px solid #1c1a17;
+                    background-color: #f7f4ed;
+                    padding: 8px 10px;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    font-size: 11px;
+                    color: #1c1a17;
+                    letter-spacing: 0.5px;
+                    text-align: left;
+                }
+                .budget-table td {
+                    border: 1.5px solid #1c1a17;
+                    padding: 9px 10px;
+                    font-size: 12px;
+                }
+                .text-center { text-align: center; }
+                .text-right { text-align: right; }
+
+                .total-label-cell {
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    text-align: right;
+                }
+                .total-amount-cell {
+                    font-weight: 800;
+                    font-size: 13px;
+                    background-color: #f7f4ed;
+                }
+
+                .budget-footer {
+                    margin-top: 60px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-end;
+                }
+                .validity-text {
+                    font-size: 11px;
+                    color: #6b6355;
+                    font-style: italic;
+                    max-width: 300px;
+                    line-height: 1.4;
+                }
+                .signature-box {
+                    text-align: center;
+                    width: 250px;
+                }
+                .signature-line {
+                    border-top: 1px solid #1c1a17;
+                    margin-bottom: 5px;
+                }
+                .signature-label {
+                    font-size: 11px;
+                    font-weight: bold;
+                    color: #4a453e;
+                    text-transform: uppercase;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="budget-header">
+                <div class="logo-container">
+                    <img src="assets/images/logo.png" class="logo-img" alt="Logo">
+                    <div class="brand-info">
+                        <h2>Portal Dentistas</h2>
+                        <p>Consultorio Odontológico</p>
+                    </div>
+                </div>
+                <div class="title-container">
+                    <h1>Odontología <span>Hoja de Presupuesto</span></h1>
+                    <div class="date-box">FECHA: ${dateFormatted}</div>
+                </div>
+            </div>
+
+            <div class="details-grid">
+                <div class="detail-row">
+                    <span class="detail-label">Nombre del Paciente:</span>
+                    <span class="detail-value">${patient.firstname} ${patient.lastname}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Nombre del Dentista:</span>
+                    <span class="detail-value">${dentistName || '__________________________________________________'}</span>
+                </div>
+            </div>
+
+            <table class="budget-table">
+                <thead>
+                    <tr>
+                        <th style="width: 10%;" class="text-center">Cant.</th>
+                        <th style="width: 50%;">Estudio / Servicio</th>
+                        <th style="width: 15%;" class="text-center">Fecha de Cita</th>
+                        <th style="width: 12.5%;" class="text-right">Unitario</th>
+                        <th style="width: 12.5%;" class="text-right">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows.map(r => {
+                        const serviceName = r.discountPercent > 0 
+                            ? `${r.name} (${r.tooth}) <span style="font-size: 10px; color: #6b6355; font-style: italic;">- Dcto. ${r.discountPercent}%</span>`
+                            : `${r.name} (${r.tooth})`;
+                        return `
+                            <tr>
+                                <td class="text-center">01</td>
+                                <td>${serviceName}</td>
+                                <td class="text-center" style="color: #cbd5e1;">___________</td>
+                                <td class="text-right">S/ ${r.basePrice.toFixed(2)}</td>
+                                <td class="text-right">S/ ${r.finalPrice.toFixed(2)}</td>
+                            </tr>
+                        `;
+                    }).join('')}
+                    
+                    ${hasDeposit ? `
+                        <tr>
+                            <td class="text-center">01</td>
+                            <td>Abono por Separación de Cita (Previo)</td>
+                            <td class="text-center" style="color: #cbd5e1;">___________</td>
+                            <td class="text-right">-S/ 50.00</td>
+                            <td class="text-right">-S/ 50.00</td>
+                        </tr>
+                    ` : ''}
+
+                    <tr>
+                        <td colspan="3" class="total-label-cell">Total</td>
+                        <td colspan="2" class="total-amount-cell text-right">S/ ${finalTotal.toFixed(2)}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="budget-footer">
+                <div class="validity-text">
+                    Este documento tiene validez de 30 días después de su elaboración.
+                </div>
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">Firma del Dentista</div>
+                    ${dentistName ? `<div style="font-size: 10px; color: #6b6355; margin-top: 2px;">${dentistName}</div>` : ''}
+                </div>
+            </div>
+
+            <script>
+                window.onload = function() {
+                    window.print();
+                    setTimeout(function() {
+                        window.frameElement.remove();
+                    }, 1000);
+                }
+            </script>
+        </body>
+        </html>
+    `);
+    doc.close();
+}
