@@ -3081,12 +3081,12 @@ function openOrthoControlModal() {
         document.getElementById('control-cop').value = appState.currentUser.role === 'dentist' ? '61259' : ''; // Default COP
     }
 
-    if (modal) modal.style.display = 'flex';
+    if (modal) modal.classList.add('active');
 }
 
 function closeOrthoControlModal() {
     const modal = document.getElementById('ortho-control-modal');
-    if (modal) modal.style.display = 'none';
+    if (modal) modal.classList.remove('active');
 }
 
 async function saveOrthoControlFlow(e) {
