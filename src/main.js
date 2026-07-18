@@ -28,7 +28,14 @@ import { hashPassword, verifyUser, getRoleNameSpanish, checkSession, logout } fr
 import { isWithinFourHours, saveAppointment, cancelAppointment } from './modules/appointments.js';
 import { calculateAge, addPatient, addEvolutionNote } from './modules/patients.js';
 import { saveBaselineState, OdontogramController, HALLAZGOS_CONFIG } from './modules/odontogram.js';
-import { exportPatientPDFDirect } from './utils/pdf-generator.js';
+import { exportPatientPDFDirect, printBudgetSheet } from './utils/pdf-generator.js';
+
+function getLocalYYYYMMDD(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
 
 // Application State
 let appState = {
@@ -39,7 +46,7 @@ let appState = {
     shifts: [],
     treatmentsCatalog: [],
     patientTreatmentPlans: [],
-    systemTime: new Date("2026-07-03T15:46:33-05:00") // Simulated clock baseline
+    systemTime: new Date() // Synchronized current date and time
 };
 
 // UI State Constants
@@ -675,7 +682,7 @@ document.getElementById('patient-form').addEventListener('submit', async (e) => 
 function loadCalendar() {
     const dateSel = document.getElementById('calendar-date-selector');
     if (!dateSel.value) {
-        dateSel.value = appState.systemTime.toISOString().split('T')[0];
+        dateSel.value = getLocalYYYYMMDD(appState.systemTime);
     }
     const selectedDate = dateSel.value;
     
@@ -1000,7 +1007,7 @@ function renderRemindersList() {
     const tbody = document.getElementById('reminders-table-body');
     tbody.innerHTML = '';
 
-    const todayStr = appState.systemTime.toISOString().split('T')[0];
+    const todayStr = getLocalYYYYMMDD(appState.systemTime);
     const todayAppointments = appState.appointments.filter(a => a.date === todayStr);
 
     if (todayAppointments.length === 0) {
@@ -1136,16 +1143,6 @@ async function loadEHRForPatient() {
     renderEvolutionNotesList(patient);
     drawOdontogramTeethLayout(patient);
     setOdontogramMode('baseline');
-
-    const pdfBtn = document.getElementById('btn-export-pdf');
-    const helpTxt = document.getElementById('export-help-text');
-    if (patient.evolutionNotes.length > 0) {
-        pdfBtn.disabled = false;
-        helpTxt.classList.add('hidden');
-    } else {
-        pdfBtn.disabled = true;
-        helpTxt.classList.remove('hidden');
-    }
 }
 
 function clearEHRPanel() {
@@ -1157,8 +1154,6 @@ function clearEHRPanel() {
     document.getElementById('medical-alerts-card').classList.add('hidden');
     document.getElementById('notes-timeline').innerHTML = '<p class="text-muted text-center py-4">Seleccione un paciente para cargar su historial clínico.</p>';
     document.getElementById('ehr-notes-count').innerText = "0";
-    document.getElementById('btn-export-pdf').disabled = true;
-    document.getElementById('export-help-text').classList.remove('hidden');
     
     // Clear search input
     const searchInput = document.getElementById('ehr-patient-search');
@@ -1938,7 +1933,15 @@ window.loadEHRForPatient = loadEHRForPatient;
 window.setOdontogramMode = setOdontogramMode;
 window.saveBaselineState = saveBaselineStateFlow;
 window.closeFindingModal = closeFindingModal;
-window.exportPatientPDF = exportPatientPDF;
+window.exportPatientPDF = () => {
+    const budgetPatientSelect = document.getElementById('budget-patient-select');
+    const patientId = budgetPatientSelect ? budgetPatientSelect.value : '';
+    if (!patientId) {
+        alert("Debe seleccionar un paciente primero.");
+        return;
+    }
+    printBudgetSheet(patientId, appState);
+};
 window.openUserModal = openUserModal;
 window.closeUserModal = closeUserModal;
 window.editUser = editUser;
@@ -2533,17 +2536,12 @@ async function loadBudgetForPatient(patientId) {
     // Show patient info
     document.getElementById('budget-patient-name-header').innerText = `${patient.firstname} ${patient.lastname} (DNI: ${patient.dni})`;
 
-    // Update export PDF button and help text based on evolution notes
+    // Enable print button unconditionally when patient is loaded in budget
     const pdfBtn = document.getElementById('btn-export-pdf');
     const helpTxt = document.getElementById('export-help-text');
     if (pdfBtn && helpTxt) {
-        if (patient.evolutionNotes && patient.evolutionNotes.length > 0) {
-            pdfBtn.disabled = false;
-            helpTxt.classList.add('hidden');
-        } else {
-            pdfBtn.disabled = true;
-            helpTxt.classList.remove('hidden');
-        }
+        pdfBtn.disabled = false;
+        helpTxt.classList.add('hidden');
     }
 
     // Load treatment plans
