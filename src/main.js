@@ -2493,7 +2493,7 @@ function setupBudgetPatientSearch() {
 
 function clearBudgetPanel() {
     document.getElementById('budget-patient-name-header').innerText = '-';
-    document.getElementById('budget-table-body').innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Seleccione un paciente para cargar su presupuesto.</td></tr>';
+    document.getElementById('budget-table-body').innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Seleccione un paciente en la ficha clínica / odontograma primero.</td></tr>';
     document.getElementById('budget-subtotal').innerText = 'S/ 0.00';
     document.getElementById('budget-total-discount').innerText = 'S/ 0.00';
     document.getElementById('budget-deposit').innerText = 'S/ 0.00';
