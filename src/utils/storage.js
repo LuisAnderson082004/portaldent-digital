@@ -6,11 +6,28 @@ import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from './supabaseClient.js';
 export async function getPatients() {
     const { data, error } = await supabase
         .from('patients')
-        .select('*')
+        .select('id, historyNumber, DNI:dni, firstname, lastname, dob, phone, email, address')
         .order('historyNumber', { ascending: true });
+    if (error) throw error;
+    // Map DNI key if case sensitive issues exist, but select matches field names
+    return data.map(p => {
+        if (p.DNI !== undefined && p.dni === undefined) {
+            p.dni = p.DNI;
+        }
+        return p;
+    });
+}
+
+export async function getPatientClinicalData(id) {
+    const { data, error } = await supabase
+        .from('patients')
+        .select('id, allergies, chronic, odontogram, evolutionNotes')
+        .eq('id', id)
+        .single();
     if (error) throw error;
     return data;
 }
+
 
 export async function insertPatient(patient) {
     const { data, error } = await supabase
