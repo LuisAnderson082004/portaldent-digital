@@ -686,3 +686,260 @@ export function printBudgetSheet(patientId, state) {
     `);
     doc.close();
 }
+
+export function printOrthoControlSheet(control, patient) {
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'fixed';
+    printFrame.style.right = '0';
+    printFrame.style.bottom = '0';
+    printFrame.style.width = '0';
+    printFrame.style.height = '0';
+    printFrame.style.border = '0';
+    document.body.appendChild(printFrame);
+
+    const doc = printFrame.contentWindow.document;
+
+    const parseCheckbox = (val) => val ? '[X]' : '[  ]';
+    const parseYesNo = (val) => val === 'SI' ? '[X] SÍ  [  ] NO' : val === 'NO' ? '[  ] SÍ  [X] NO' : '[  ] SÍ  [  ] NO';
+    
+    // Format dates
+    const dParts = control.date.split('-');
+    const dateFormatted = `${dParts[2]}/${dParts[1]}/${dParts[0]}`;
+
+    doc.write(`
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <title>Seguimiento Ortodoncia - ${patient.firstname} ${patient.lastname}</title>
+            <style>
+                @page {
+                    size: A4;
+                    margin: 15mm;
+                }
+                body {
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    color: #1c1a17;
+                    background-color: #ffffff;
+                    margin: 0;
+                    padding: 0;
+                    font-size: 11px;
+                    line-height: 1.35;
+                }
+                .header-table {
+                    width: 100%;
+                    border-bottom: 2px solid #1c1a17;
+                    padding-bottom: 10px;
+                    margin-bottom: 15px;
+                }
+                .logo-brand {
+                    font-size: 18px;
+                    font-weight: bold;
+                    color: #1b4332;
+                }
+                .header-info {
+                    text-align: right;
+                    font-size: 9px;
+                    color: #4a453e;
+                }
+                .title-doc {
+                    text-align: center;
+                    font-size: 15px;
+                    font-weight: 800;
+                    letter-spacing: 1px;
+                    text-transform: uppercase;
+                    margin: 15px 0;
+                    color: #1c1a17;
+                    border-bottom: 1.5px solid #1c1a17;
+                    padding-bottom: 3px;
+                }
+                .details-grid {
+                    display: grid;
+                    grid-template-columns: 1.5fr 1fr;
+                    gap: 10px;
+                    margin-bottom: 20px;
+                }
+                .detail-line {
+                    border-bottom: 1px dotted #ab8f51;
+                    font-weight: 600;
+                }
+                .section-title {
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    margin-bottom: 10px;
+                    border-bottom: 1px solid #1c1a17;
+                    padding-bottom: 2px;
+                    font-size: 11px;
+                }
+                .control-list {
+                    list-style: none;
+                    padding: 0;
+                    margin: 0;
+                }
+                .control-list li {
+                    margin-bottom: 7px;
+                    display: flex;
+                    align-items: flex-start;
+                }
+                .checkbox-indicator {
+                    font-family: monospace;
+                    margin-right: 8px;
+                    font-weight: bold;
+                }
+                .field-desc {
+                    flex-grow: 1;
+                }
+                .obs-box {
+                    border: 1px solid #1c1a17;
+                    padding: 10px;
+                    min-height: 80px;
+                    margin-top: 15px;
+                    font-size: 11px;
+                    white-space: pre-wrap;
+                }
+                .footer-sign {
+                    margin-top: 50px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-end;
+                }
+                .sig-box {
+                    border-top: 1px solid #1c1a17;
+                    width: 220px;
+                    text-align: center;
+                    padding-top: 5px;
+                    font-size: 10px;
+                    font-weight: bold;
+                }
+            </style>
+        </head>
+        <body>
+            <table class="header-table">
+                <tr>
+                    <td>
+                        <div class="logo-brand">EDENTS E.I.R.L.</div>
+                        <div style="font-size: 9px; color: #6b6355;">Calle Aricota 106 oficina 202 Chacarilla Surco Lima</div>
+                    </td>
+                    <td class="header-info">
+                        <strong>RUC:</strong> 20602845690 | <strong>TELF:</strong> 992145641<br>
+                        <strong>e-mail:</strong> Clinicacedents@gmail.com<br>
+                        <strong>HC:</strong> ${patient.historyNumber || '______'} &nbsp;&nbsp;&nbsp; <strong>FECHA:</strong> ${dateFormatted}
+                    </td>
+                </tr>
+            </table>
+
+            <div class="title-doc">Seguimiento Ortodoncia</div>
+
+            <div class="details-grid">
+                <div><strong>Nombre del paciente:</strong> <span class="detail-line">&nbsp;${patient.firstname} ${patient.lastname}&nbsp;</span></div>
+                <div><strong>Fecha/Hora Control:</strong> <span class="detail-line">&nbsp;${dateFormatted} ${control.time || ''}&nbsp;</span></div>
+                <div><strong>Dr tratante:</strong> <span class="detail-line">&nbsp;${control.dentist_name || '________________________'}&nbsp;</span></div>
+                <div><strong>COP:</strong> <span class="detail-line">&nbsp;${control.dentist_cop || '________'}&nbsp;</span></div>
+                <div style="grid-column: span 2;"><strong>Tipo de visita:</strong> <span class="detail-line">&nbsp;${control.visit_type || 'Control'}&nbsp;</span></div>
+            </div>
+
+            <div class="section-title">1. Control y Evolución Ortodoncia (Trabajo Realizado)</div>
+            
+            <ul class="control-list">
+                <li>
+                    <span class="checkbox-indicator">[ ]</span>
+                    <span class="field-desc"><strong>Separadores:</strong> Superior ${parseCheckbox(control.separators?.sup)} &nbsp; Inferior ${parseCheckbox(control.separators?.inf)} &nbsp; No requiere ${parseCheckbox(control.separators?.none)}</span>
+                </li>
+                <li>
+                    <span class="checkbox-indicator">[ ]</span>
+                    <span class="field-desc"><strong>Cementado de Brackets:</strong> Superior ${parseCheckbox(control.brackets_bonding?.sup)} &nbsp; Inferior ${parseCheckbox(control.brackets_bonding?.inf)}</span>
+                </li>
+                <li>
+                    <span class="checkbox-indicator">[ ]</span>
+                    <span class="field-desc"><strong>Tubos:</strong> Superior ${parseCheckbox(control.tubes?.sup)} &nbsp; Inferior ${parseCheckbox(control.tubes?.inf)} &nbsp; No requiere ${parseCheckbox(control.tubes?.none)} &nbsp;&nbsp;&nbsp; ${control.tubes_motif ? `<strong>Motivo:</strong> ${control.tubes_motif}` : ''}</span>
+                </li>
+                <li>
+                    <span class="checkbox-indicator">[ ]</span>
+                    <span class="field-desc"><strong>Bandas:</strong> Superior ${parseCheckbox(control.bands?.sup)} &nbsp; Inferior ${parseCheckbox(control.bands?.inf)} &nbsp; No requiere ${parseCheckbox(control.bands?.none)} &nbsp;&nbsp;&nbsp; ${control.bands_motif ? `<strong>Motivo:</strong> ${control.bands_motif}` : ''}</span>
+                </li>
+                <li>
+                    <span class="checkbox-indicator">[ ]</span>
+                    <span class="field-desc"><strong>Arco superior detalles:</strong> ${control.arch_upper_details || '__________________________________________________'}</span>
+                </li>
+                <li>
+                    <span class="checkbox-indicator">[ ]</span>
+                    <span class="field-desc"><strong>Arco inferior detalles:</strong> ${control.arch_lower_details || '__________________________________________________'}</span>
+                </li>
+                <li>
+                    <span class="checkbox-indicator">[ ]</span>
+                    <span class="field-desc"><strong>Uso de ligas intermaxilares:</strong> ${parseYesNo(control.ligatures_use?.yes_no)} &nbsp;&nbsp;&nbsp; ${control.ligatures_use?.num ? `<strong>n°:</strong> ${control.ligatures_use.num}` : ''}</span>
+                </li>
+                <li>
+                    <span class="checkbox-indicator">[ ]</span>
+                    <span class="field-desc"><strong>Paciente utiliza ligas intermaxilares:</strong> ${parseYesNo(control.ligatures_patient?.yes_no)} &nbsp;&nbsp;&nbsp; ${control.ligatures_motif ? `<strong>Motivo:</strong> ${control.ligatures_motif}` : ''}</span>
+                </li>
+                <li>
+                    <span class="checkbox-indicator">[ ]</span>
+                    <span class="field-desc"><strong>Cambio de Elastic:</strong> ${parseYesNo(control.elastic_change)}</span>
+                </li>
+                <li>
+                    <span class="checkbox-indicator">[ ]</span>
+                    <span class="field-desc"><strong>Repegado de Brackets:</strong> ${parseYesNo(control.brackets_rebound?.yes_no)} &nbsp;&nbsp;&nbsp; ${control.brackets_rebound?.pieces ? `<strong>Piezas:</strong> ${control.brackets_rebound.pieces}` : ''}</span>
+                </li>
+                <li>
+                    <span class="checkbox-indicator">[ ]</span>
+                    <span class="field-desc"><strong>Repegado de Tubos:</strong> ${parseYesNo(control.tubes_rebound?.yes_no)} &nbsp;&nbsp;&nbsp; ${control.tubes_rebound?.pieces ? `<strong>Piezas:</strong> ${control.tubes_rebound.pieces}` : ''}</span>
+                </li>
+                <li>
+                    <span class="checkbox-indicator">[ ]</span>
+                    <span class="field-desc"><strong>Repegado de Bandas:</strong> ${parseYesNo(control.bands_rebound?.yes_no)} &nbsp;&nbsp;&nbsp; ${control.bands_rebound?.pieces ? `<strong>Piezas:</strong> ${control.bands_rebound.pieces}` : ''}</span>
+                </li>
+                <li>
+                    <span class="checkbox-indicator">[ ]</span>
+                    <span class="field-desc"><strong>Higiene del paciente:</strong> Buena ${parseCheckbox(control.hygiene === 'Buena')} &nbsp; Mala ${parseCheckbox(control.hygiene === 'Mala')} &nbsp;&nbsp;&nbsp; ${control.hygiene_profilaxis ? '<strong>[X] Se deriva a profilaxis</strong>' : '[  ] Se deriva a profilaxis'}</span>
+                </li>
+                <li>
+                    <span class="checkbox-indicator">[ ]</span>
+                    <span class="field-desc"><strong>Presencia de caries:</strong> SÍ ${parseCheckbox(control.caries === 'SI')} &nbsp; NO ${parseCheckbox(control.caries === 'NO')} &nbsp;&nbsp;&nbsp; ${control.caries_cure ? '<strong>[X] Se deriva a curar</strong>' : '[  ] Se deriva a curar'}</span>
+                </li>
+                ${control.referrals && control.referrals.length > 0 ? `
+                <li>
+                    <span class="checkbox-indicator">[X]</span>
+                    <span class="field-desc"><strong>Se deriva a:</strong> ${control.referrals.join(', ')} &nbsp;&nbsp;&nbsp; ${control.referral_specs ? `<strong>Especif:</strong> ${control.referral_specs}` : ''}</span>
+                </li>
+                ` : ''}
+                <li>
+                    <span class="checkbox-indicator">[ ]</span>
+                    <span class="field-desc"><strong>Recomendaciones limpieza:</strong> ${(control.recommendations || []).join(', ') || 'Pasta dental, Cepillo ortodóntico'}</span>
+                </li>
+                <li>
+                    <span class="checkbox-indicator">[ ]</span>
+                    <span class="field-desc"><strong>Retiro de Brackets:</strong> Superior ${parseCheckbox(control.brackets_removal?.sup)} &nbsp; Inferior ${parseCheckbox(control.brackets_removal?.inf)} &nbsp;&nbsp;&nbsp; ${control.brackets_removal?.date ? `<strong>Fecha:</strong> ${control.brackets_removal.date}` : ''}</span>
+                </li>
+                <li>
+                    <span class="checkbox-indicator">[ ]</span>
+                    <span class="field-desc"><strong>Colocación de contención:</strong> Superior ${parseCheckbox(control.retention?.sup)} &nbsp; Inferior ${parseCheckbox(control.retention?.inf)} &nbsp; Fija ${parseCheckbox(control.retention?.fija)} &nbsp; Removible ${parseCheckbox(control.retention?.removible)} &nbsp;&nbsp;&nbsp; ${control.retention?.date ? `<strong>Fecha:</strong> ${control.retention.date}` : ''}</span>
+                </li>
+            </ul>
+
+            <div class="section-title" style="margin-top: 15px;">Observaciones</div>
+            <div class="obs-box">${control.observations || 'Sin observaciones registradas.'}</div>
+
+            <div class="footer-sign">
+                <div>
+                    <strong>Próxima cita fecha:</strong> <span class="detail-line">&nbsp;${control.next_appt_date || '___________'}&nbsp;</span> &nbsp;&nbsp;&nbsp;
+                    <strong>Hora:</strong> <span class="detail-line">&nbsp;${control.next_appt_time || '___________'}&nbsp;</span>
+                </div>
+                <div class="sig-box">
+                    Firma y Sello del Odontólogo
+                </div>
+            </div>
+
+            <script>
+                window.onload = function() {
+                    window.print();
+                    setTimeout(function() {
+                        window.frameElement.remove();
+                    }, 1000);
+                }
+            </script>
+        </body>
+        </html>
+    `);
+    doc.close();
+}
