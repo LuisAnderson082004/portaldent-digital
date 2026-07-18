@@ -81,6 +81,10 @@
                     <li id="menu-treatment-plan" class="nav-item clinical-only"><a href="#" onclick="switchView('treatment-plan')"><i class="fa-solid fa-file-medical"></i> Plan de Tratamiento</a></li>
                     <li id="menu-budget" class="nav-item clinical-only"><a href="#" onclick="switchView('budget')"><i class="fa-solid fa-receipt"></i> Presupuesto & Descuentos</a></li>
                     
+                    <li class="menu-header clinical-only">Ortodoncia</li>
+                    <li id="menu-ortho-history" class="nav-item clinical-only"><a href="#" onclick="switchView('ortho-history')"><i class="fa-solid fa-folder-open"></i> Ficha de Ortodoncia</a></li>
+                    <li id="menu-ortho-controls" class="nav-item clinical-only"><a href="#" onclick="switchView('ortho-controls')"><i class="fa-solid fa-calendar-check"></i> Ficha de Control Mensual</a></li>
+                    
                     <li class="menu-header admin-only">Administración</li>
                     <li id="menu-users" class="nav-item admin-only"><a href="#" onclick="switchView('users')"><i class="fa-solid fa-users-gear"></i> Gestión Personal</a></li>
                     <li id="menu-shifts" class="nav-item admin-only"><a href="#" onclick="switchView('shifts')"><i class="fa-solid fa-clock-rotate-left"></i> Horarios Dentistas</a></li>
@@ -597,10 +601,623 @@
                 </div>
             </section>
 
+            <!-- 2.10 ORTHODONTIC HISTORY VIEW -->
+            <section id="view-ortho-history" class="content-section">
+                <div class="action-bar" style="margin-bottom: 20px;">
+                    <h3>Historia Clínica de Ortodoncia</h3>
+                    <div style="font-weight: 600;">
+                        <span>Paciente Seleccionado: </span>
+                        <span id="ortho-history-patient-name" class="text-primary">-</span>
+                    </div>
+                </div>
+
+                <div id="ortho-history-empty" class="card text-center py-5" style="max-width: 800px; margin: 0 auto; padding: 30px;">
+                    <i class="fa-solid fa-folder-open" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1.5rem;"></i>
+                    <p class="text-muted" style="font-size: 1.1rem; margin-bottom: 1rem;">Seleccione un paciente en la ficha clínica / odontograma primero.</p>
+                </div>
+
+                <div id="ortho-history-container" class="hidden" style="max-width: 1000px; margin: 0 auto;">
+                    <form id="ortho-history-form">
+                        <input type="hidden" id="ortho-record-id">
+                        
+                        <div class="card" style="padding: 20px; margin-bottom: 20px;">
+                            <div class="ortho-tabs" style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; flex-wrap: wrap;">
+                                <button type="button" class="btn btn-sm btn-tab active" onclick="switchOrthoTab('ortho-tab-clinical', this)"><i class="fa-solid fa-user-doctor"></i> 1. Examen Clínico</button>
+                                <button type="button" class="btn btn-sm btn-tab btn-outline" onclick="switchOrthoTab('ortho-tab-models', this)"><i class="fa-solid fa-teeth"></i> 2. Análisis de Modelos</button>
+                                <button type="button" class="btn btn-sm btn-tab btn-outline" onclick="switchOrthoTab('ortho-tab-diagnoses', this)"><i class="fa-solid fa-stethoscope"></i> 3. Hábitos y Diagnósticos</button>
+                            </div>
+
+                            <!-- TAB 1: CLINICAL EXAM -->
+                            <div id="ortho-tab-clinical" class="ortho-tab-content">
+                                <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px; color: #1b4332;">Información de Representante & Consulta</h4>
+                                <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                                    <div class="form-group">
+                                        <label for="ortho-representative">Apoderado / Representante (Si corresponde)</label>
+                                        <input type="text" id="ortho-representative" class="form-control" placeholder="Nombre completo del apoderado">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-relationship">Parentesco / Relación</label>
+                                        <input type="text" id="ortho-relationship" class="form-control" placeholder="Ej. Padre, Madre, Tutor">
+                                    </div>
+                                    <div class="form-group" style="grid-column: span 2;">
+                                        <label for="ortho-consultation-motif">Motivo de Consulta Ortodoncia *</label>
+                                        <textarea id="ortho-consultation-motif" class="form-control" rows="2" required placeholder="Describa el motivo de consulta expresado por el paciente..."></textarea>
+                                    </div>
+                                </div>
+
+                                <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px; color: #1b4332;">Historia Dental</h4>
+                                <div class="form-grid" style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 20px;">
+                                    <div class="form-group">
+                                        <label for="ortho-eruption-chronology">Cronología de erupción (Dentición primaria y permanente)</label>
+                                        <input type="text" id="ortho-eruption-chronology" class="form-control" placeholder="Ej. Retrasada, Normal, etc.">
+                                    </div>
+                                    <div class="form-grid" style="display: grid; grid-template-columns: auto 1fr; gap: 15px; align-items: center;">
+                                        <div class="form-group">
+                                            <label style="display: block; margin-bottom: 5px;">Alteraciones estructurales, forma o número?</label>
+                                            <div style="display: flex; gap: 15px;">
+                                                <label><input type="radio" name="ortho-structural-alterations" value="Si"> Sí</label>
+                                                <label><input type="radio" name="ortho-structural-alterations" value="No" checked> No</label>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="ortho-structural-alterations-desc">Descripción de alteraciones</label>
+                                            <input type="text" id="ortho-structural-alterations-desc" class="form-control" placeholder="Describa las alteraciones en caso de marcar Sí">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px; color: #1b4332;">Examen Clínico Facial y Funcional</h4>
+                                <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                                    <div class="form-group">
+                                        <label for="ortho-symmetry-midline">Simetría con respecto a la línea media</label>
+                                        <input type="text" id="ortho-symmetry-midline" class="form-control" placeholder="Ej. Sí, Desviado 2mm a la derecha">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-symmetry-thirds">Simetría de los tercios faciales</label>
+                                        <input type="text" id="ortho-symmetry-thirds" class="form-control" placeholder="Ej. Simétricos, Tercio inferior aumentado">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-face-form">Forma de la cara</label>
+                                        <select id="ortho-face-form" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Braquifacial">Braquifacial</option>
+                                            <option value="Mesofacial">Mesofacial</option>
+                                            <option value="Dolicofacial">Dolicofacial</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-profile">Perfil</label>
+                                        <select id="ortho-profile" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Cóncavo">Cóncavo</option>
+                                            <option value="Recto">Recto</option>
+                                            <option value="Convexo">Convexo</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-lips">Labios</label>
+                                        <select id="ortho-lips" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Incompetentes">Incompetentes</option>
+                                            <option value="Hipotónicos">Hipotónicos</option>
+                                            <option value="Hipertónicos">Hipertónicos</option>
+                                            <option value="Normales">Normales</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-chin-masseter">Mentón / Masetero</label>
+                                        <select id="ortho-chin-masseter" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Hipertónico">Hipertónico</option>
+                                            <option value="Normal">Normal</option>
+                                            <option value="Hipotónico">Hipotónico</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-nose-size">Tamaño de la nariz</label>
+                                        <select id="ortho-nose-size" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Pequeña">Pequeña</option>
+                                            <option value="Mediana">Mediana</option>
+                                            <option value="Grande">Grande</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-ears-insertion">Inserción de orejas</label>
+                                        <select id="ortho-ears-insertion" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Baja">Baja</option>
+                                            <option value="Normal">Normal</option>
+                                            <option value="Alta">Alta</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-lip-frenum">Frenillo labial</label>
+                                        <select id="ortho-lip-frenum" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Normal">Normal</option>
+                                            <option value="Baja">Baja</option>
+                                            <option value="Ancho">Ancho</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-lingual-frenum">Frenillo lingual</label>
+                                        <select id="ortho-lingual-frenum" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Normal">Normal</option>
+                                            <option value="Corto">Corto</option>
+                                            <option value="Ancho">Ancho</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-palate">Paladar</label>
+                                        <select id="ortho-palate" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Llano">Llano</option>
+                                            <option value="Normal">Normal</option>
+                                            <option value="Profundo">Profundo</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-tongue-volume">Volumen de la lengua</label>
+                                        <select id="ortho-tongue-volume" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Normal">Normal</option>
+                                            <option value="Aumentado">Aumentado</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-tongue-position">Posición de la lengua</label>
+                                        <select id="ortho-tongue-position" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Normal">Normal</option>
+                                            <option value="Protruída">Protruída</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Desviaciones ATM</label>
+                                        <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem;">
+                                            <label><input type="checkbox" name="ortho-atm" value="Apertura"> Apertura</label>
+                                            <label><input type="checkbox" name="ortho-atm" value="Cierre"> Cierre</label>
+                                            <label><input type="checkbox" name="ortho-atm" value="Ruidos"> Ruidos</label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Contactos Prematuros</label>
+                                        <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem;">
+                                            <label><input type="checkbox" name="ortho-contacts" value="Caninos"> Caninos</label>
+                                            <label><input type="checkbox" name="ortho-contacts" value="Molares"> Molares</label>
+                                            <label><input type="checkbox" name="ortho-contacts" value="Incisivos"> Incisivos</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TAB 2: MODELS ANALYSIS -->
+                            <div id="ortho-tab-models" class="ortho-tab-content hidden">
+                                <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px; color: #1b4332;">Análisis de Modelos</h4>
+                                <div class="table-responsive" style="margin-bottom: 20px;">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr style="background-color: #f7f4ed;">
+                                                <th style="width: 30%;">Característica / Medición</th>
+                                                <th style="width: 35%;">Arcada Superior</th>
+                                                <th style="width: 35%;">Arcada Inferior</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="ortho-models-table-body">
+                                            <!-- Generated dynamically in main.js -->
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                                    <div class="form-group">
+                                        <label style="font-weight: 600;">Overjet (mm)</label>
+                                        <div style="display: flex; gap: 10px; align-items: center;">
+                                            <input type="text" id="ortho-overjet" class="form-control" style="width: 80px;" placeholder="Ej. 3">
+                                            <select id="ortho-overjet-type" class="form-control">
+                                                <option value="Normal">Normal</option>
+                                                <option value="Aumentado">Aumentado</option>
+                                                <option value="A tope">A tope</option>
+                                                <option value="Inverso">Inverso</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label style="font-weight: 600;">Overbite (mm)</label>
+                                        <div style="display: flex; gap: 10px; align-items: center;">
+                                            <input type="text" id="ortho-overbite" class="form-control" style="width: 80px;" placeholder="Ej. 2">
+                                            <select id="ortho-overbite-type" class="form-control">
+                                                <option value="Normal">Normal</option>
+                                                <option value="Mordida abierta">Mordida abierta</option>
+                                                <option value="Mordida profunda">Mordida profunda</option>
+                                                <option value="En paladar">En paladar</option>
+                                                <option value="En cíngulo">En cíngulo</option>
+                                                <option value="Incompleto">Incompleto</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TAB 3: RADIOGRAPHIES, HABITS & DIAGNOSES -->
+                            <div id="ortho-tab-diagnoses" class="ortho-tab-content hidden">
+                                <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+                                    <div>
+                                        <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px; color: #1b4332;">Examen Radiográfico</h4>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.9rem;">
+                                            <label><input type="checkbox" name="ortho-xray" value="Edad dental"> Edad dental</label>
+                                            <label><input type="checkbox" name="ortho-xray" value="Supernumerarios"> Supernumerarios</label>
+                                            <label><input type="checkbox" name="ortho-xray" value="Ausencia de germen"> Ausencia de germen</label>
+                                            <label><input type="checkbox" name="ortho-xray" value="Dientes incluidos"> Dientes incluidos</label>
+                                            <label><input type="checkbox" name="ortho-xray" value="Pérdidas prematuras"> Pérdidas prematuras</label>
+                                            <label><input type="checkbox" name="ortho-xray" value="Otras Alteraciones"> Otras Alteraciones</label>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px; color: #1b4332;">Hábitos Registrados</h4>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.9rem; margin-bottom: 10px;">
+                                            <label><input type="checkbox" name="ortho-habits" value="Deglución atípica"> Deglución atípica</label>
+                                            <label><input type="checkbox" name="ortho-habits" value="Respiración bucal"> Respiración bucal</label>
+                                            <label><input type="checkbox" name="ortho-habits" value="Bruxismo"> Bruxismo</label>
+                                            <label><input type="checkbox" name="ortho-habits" value="Onicofagia"> Onicofagia</label>
+                                            <label><input type="checkbox" name="ortho-habits" value="Succión digital"> Succión digital</label>
+                                            <label><input type="checkbox" name="ortho-habits" value="Queilofagia"> Queilofagia</label>
+                                            <label><input type="checkbox" name="ortho-habits" value="Succión de Chupón"> Succión de Chupón</label>
+                                            <label><input type="checkbox" name="ortho-habits" value="Atrapamiento Labial"> Atrapamiento Labial</label>
+                                            <label><input type="checkbox" name="ortho-habits" value="Protrusión lingual"> Protrusión lingual</label>
+                                        </div>
+                                        <div class="form-group" style="margin-bottom: 8px;">
+                                            <label for="ortho-habits-other" style="font-size: 0.85rem;">Otros hábitos</label>
+                                            <input type="text" id="ortho-habits-other" class="form-control py-1" placeholder="Especificar...">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="ortho-habits-frequency" style="font-size: 0.85rem;">Frecuencia e intensidad</label>
+                                            <input type="text" id="ortho-habits-frequency" class="form-control py-1" placeholder="Ej. Nocturno, diario">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px; color: #1b4332;">Diagnóstico & Plan de Trabajo</h4>
+                                <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                                    <div class="form-group">
+                                        <label for="ortho-dental-diagnosis">Diagnóstico Dentario</label>
+                                        <textarea id="ortho-dental-diagnosis" class="form-control" rows="3"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-cephalometric-diagnosis">Diagnóstico Cefalométrico</label>
+                                        <textarea id="ortho-cephalometric-diagnosis" class="form-control" rows="3"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-problems-list">Lista de Problemas</label>
+                                        <textarea id="ortho-problems-list" class="form-control" rows="3"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-treatment-objectives">Objetivos del Tratamiento</label>
+                                        <textarea id="ortho-treatment-objectives" class="form-control" rows="3"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-treatment-plan">Plan de Tratamiento</label>
+                                        <textarea id="ortho-treatment-plan" class="form-control" rows="3"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-interconsultations">Interconsultas Realizadas</label>
+                                        <textarea id="ortho-interconsultations" class="form-control" rows="3"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 15px;">
+                                <button type="submit" class="btn btn-success"><i class="fa-solid fa-cloud-arrow-up"></i> Guardar Ficha Ortodoncia</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- 2.11 ORTHODONTIC MONTHLY CONTROLS VIEW -->
+            <section id="view-ortho-controls" class="content-section">
+                <div class="action-bar" style="margin-bottom: 20px;">
+                    <h3>Seguimiento y Control de Ortodoncia</h3>
+                    <div style="font-weight: 600;">
+                        <span>Paciente Seleccionado: </span>
+                        <span id="ortho-controls-patient-name" class="text-primary">-</span>
+                    </div>
+                </div>
+
+                <div id="ortho-controls-empty" class="card text-center py-5" style="max-width: 800px; margin: 0 auto; padding: 30px;">
+                    <i class="fa-solid fa-calendar-check" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1.5rem;"></i>
+                    <p class="text-muted" style="font-size: 1.1rem; margin-bottom: 1rem;">Seleccione un paciente en la ficha clínica / odontograma primero.</p>
+                </div>
+
+                <div id="ortho-controls-container" class="hidden" style="max-width: 1000px; margin: 0 auto;">
+                    <div class="card" style="padding: 20px; margin-bottom: 20px;">
+                        <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h4 style="margin: 0;"><i class="fa-solid fa-list"></i> Historial de Controles Mensuales</h4>
+                            <button class="btn btn-primary btn-sm" onclick="openOrthoControlModal()"><i class="fa-solid fa-plus"></i> Nuevo Control Mensual</button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Hora</th>
+                                        <th>Dr. Tratante</th>
+                                        <th>Tipo Visita</th>
+                                        <th>Observaciones</th>
+                                        <th class="text-center" style="width: 150px;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ortho-controls-table-body">
+                                    <!-- Rendered dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
+        <div id="print-iframe-container" style="display: none;"></div>
     </div>
 
     <!-- ==================== MODALS & DIALOGS ==================== -->
+
+    <!-- Ortho Control Modal -->
+    <div id="ortho-control-modal" class="modal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3>Nuevo Control y Evolución Ortodoncia</h3>
+                <span class="close-btn" onclick="closeOrthoControlModal()">&times;</span>
+            </div>
+            <form id="ortho-control-form">
+                <input type="hidden" id="ortho-control-id">
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto; display: flex; flex-direction: column; gap: 1.25rem;">
+                    <!-- Date, Time, Visit Type -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 15px;">
+                        <div class="form-group">
+                            <label for="control-date"><strong>Fecha *</strong></label>
+                            <input type="date" id="control-date" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="control-time"><strong>Hora *</strong></label>
+                            <input type="time" id="control-time" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label><strong>Tipo de Visita *</strong></label>
+                            <div style="display: flex; gap: 10px; margin-top: 5px;">
+                                <label><input type="radio" name="control-visit-type" value="Inicio de tratamiento" required> Inicio</label>
+                                <label><input type="radio" name="control-visit-type" value="Control" checked> Control</label>
+                                <label><input type="radio" name="control-visit-type" value="Otros"> Otros</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dentist and COP -->
+                    <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label for="control-dentist">Dr. Tratante</label>
+                            <input type="text" id="control-dentist" class="form-control" placeholder="Nombre del odontólogo">
+                        </div>
+                        <div class="form-group">
+                            <label for="control-cop">C.O.P.</label>
+                            <input type="text" id="control-cop" class="form-control" placeholder="N° de colegiatura">
+                        </div>
+                    </div>
+
+                    <h4 style="border-bottom: 2px solid #e2d7be; padding-bottom: 5px; margin-bottom: 5px; color: #1b4332;">Trabajo Realizado</h4>
+
+                    <!-- Row 1: Separadores, Cementado, Tubos, Bandas -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <!-- Col A: Separadores & Brackets -->
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="form-group">
+                                <label><strong>Separadores:</strong></label>
+                                <div style="display: flex; gap: 12px; font-size: 0.9rem;">
+                                    <label><input type="checkbox" id="control-sep-sup"> Superior</label>
+                                    <label><input type="checkbox" id="control-sep-inf"> Inferior</label>
+                                    <label><input type="checkbox" id="control-sep-none"> No requiere</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label><strong>Cementado de Brackets:</strong></label>
+                                <div style="display: flex; gap: 12px; font-size: 0.9rem;">
+                                    <label><input type="checkbox" id="control-brac-sup"> Superior</label>
+                                    <label><input type="checkbox" id="control-brac-inf"> Inferior</label>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Col B: Tubos & Bandas -->
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="form-group">
+                                <label><strong>Tubos:</strong></label>
+                                <div style="display: flex; gap: 8px; align-items: center; font-size: 0.85rem;">
+                                    <label><input type="checkbox" id="control-tubes-sup"> Sup</label>
+                                    <label><input type="checkbox" id="control-tubes-inf"> Inf</label>
+                                    <label><input type="checkbox" id="control-tubes-none"> No req</label>
+                                    <input type="text" id="control-tubes-motif" class="form-control py-1" style="flex-grow: 1; padding: 2px 6px;" placeholder="Motivo...">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label><strong>Bandas:</strong></label>
+                                <div style="display: flex; gap: 8px; align-items: center; font-size: 0.85rem;">
+                                    <label><input type="checkbox" id="control-bands-sup"> Sup</label>
+                                    <label><input type="checkbox" id="control-bands-inf"> Inf</label>
+                                    <label><input type="checkbox" id="control-bands-none"> No req</label>
+                                    <input type="text" id="control-bands-motif" class="form-control py-1" style="flex-grow: 1; padding: 2px 6px;" placeholder="Motivo...">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Details fields -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label for="control-arch-upper"><strong>Arco superior detalles:</strong></label>
+                            <input type="text" id="control-arch-upper" class="form-control" placeholder="Ej. 0.14 NiTi">
+                        </div>
+                        <div class="form-group">
+                            <label for="control-arch-lower"><strong>Arco inferior detalles:</strong></label>
+                            <input type="text" id="control-arch-lower" class="form-control" placeholder="Ej. 0.14 NiTi">
+                        </div>
+                    </div>
+
+                    <!-- Ligas & Elastics -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label><strong>Uso de ligas intermaxilares:</strong></label>
+                            <div style="display: flex; gap: 10px; align-items: center; font-size: 0.9rem;">
+                                <label><input type="radio" name="control-ligas-use" value="SI"> Sí</label>
+                                <label><input type="radio" name="control-ligas-use" value="NO" checked> No</label>
+                                <span style="font-size: 0.8rem;">n°:</span>
+                                <input type="text" id="control-ligas-use-num" class="form-control py-1" style="width: 60px;" placeholder="Ej. 1/8">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label><strong>Paciente utiliza ligas intermaxilares:</strong></label>
+                            <div style="display: flex; gap: 10px; align-items: center; font-size: 0.9rem;">
+                                <label><input type="radio" name="control-ligas-patient" value="SI"> Sí</label>
+                                <label><input type="radio" name="control-ligas-patient" value="NO" checked> No</label>
+                                <input type="text" id="control-ligas-patient-motif" class="form-control py-1" style="flex-grow: 1;" placeholder="Motivo...">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Elastic change & Repegado -->
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px;">
+                        <div class="form-group">
+                            <label><strong>Cambio de Elastic:</strong></label>
+                            <div style="display: flex; gap: 15px; margin-top: 5px;">
+                                <label><input type="radio" name="control-elastic-change" value="SI" checked> Sí</label>
+                                <label><input type="radio" name="control-elastic-change" value="NO"> No</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label><strong>Repegado:</strong></label>
+                            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem;">
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <label style="width: 110px;"><input type="checkbox" id="control-rebound-brac"> Brackets</label>
+                                    <input type="text" id="control-rebound-brac-pieces" class="form-control py-1" style="flex-grow: 1;" placeholder="Piezas (Ej. 11, 23)">
+                                </div>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <label style="width: 110px;"><input type="checkbox" id="control-rebound-tubes"> Tubos</label>
+                                    <input type="text" id="control-rebound-tubes-pieces" class="form-control py-1" style="flex-grow: 1;" placeholder="Piezas (Ej. 36, 46)">
+                                </div>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <label style="width: 110px;"><input type="checkbox" id="control-rebound-bands"> Bandas</label>
+                                    <input type="text" id="control-rebound-bands-pieces" class="form-control py-1" style="flex-grow: 1;" placeholder="Piezas">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hygiene & Caries & Derivations -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="form-group">
+                                <label><strong>Higiene del Paciente:</strong></label>
+                                <div style="display: flex; gap: 10px; flex-direction: column; font-size: 0.9rem; margin-top: 4px;">
+                                    <label><input type="radio" name="control-hygiene" value="Buena" checked> Buena</label>
+                                    <label><input type="radio" name="control-hygiene" value="Mala"> Mala</label>
+                                    <label><input type="checkbox" id="control-hygiene-profilaxis"> Se deriva a profilaxis</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label><strong>Presencia de Caries:</strong></label>
+                                <div style="display: flex; gap: 10px; flex-direction: column; font-size: 0.9rem; margin-top: 4px;">
+                                    <label><input type="radio" name="control-caries" value="NO" checked> No</label>
+                                    <label><input type="radio" name="control-caries" value="SI"> Sí</label>
+                                    <label><input type="checkbox" id="control-caries-cure"> Se deriva a curar</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label><strong>Se deriva a:</strong></label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.85rem; margin-top: 4px;">
+                                <label><input type="checkbox" name="control-referral" value="Periodoncia"> Periodoncia</label>
+                                <label><input type="checkbox" name="control-referral" value="Odontopediatría"> Odontopediatría</label>
+                                <label><input type="checkbox" name="control-referral" value="Odontología general"> Odontología general</label>
+                                <label><input type="checkbox" name="control-referral" value="Cirugía Maxilar"> Cirugía Maxilar</label>
+                                <label><input type="checkbox" name="control-referral" value="Endodoncia"> Endodoncia</label>
+                                <label><input type="checkbox" name="control-referral" value="Rehabilitación Oral"> Reh. Oral</label>
+                                <label><input type="checkbox" name="control-referral" value="Implantología"> Implantología</label>
+                                <label><input type="checkbox" name="control-referral" value="Estética Dental"> Estética Dental</label>
+                                <label><input type="checkbox" name="control-referral" value="ATM"> ATM</label>
+                            </div>
+                            <input type="text" id="control-referral-specs" class="form-control mt-2 py-1" placeholder="Especificaciones de la derivación...">
+                        </div>
+                    </div>
+
+                    <!-- Clean Recommendations & Retiro/Contención -->
+                    <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                        <div class="form-group">
+                            <label><strong>Recomendaciones para mantenimiento y limpieza:</strong></label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.85rem; margin-top: 4px;">
+                                <label><input type="checkbox" name="control-recommendations" value="Pasta dental"> Pasta dental</label>
+                                <label><input type="checkbox" name="control-recommendations" value="Colutorio"> Colutorio</label>
+                                <label><input type="checkbox" name="control-recommendations" value="Hilo dental"> Hilo dental</label>
+                                <label><input type="checkbox" name="control-recommendations" value="Interproximal"> Interproximal</label>
+                                <label><input type="checkbox" name="control-recommendations" value="Cepillo ortodóntico"> Cepillo ortodóntico</label>
+                                <label><input type="checkbox" name="control-recommendations" value="Cepillo monotipo"> Cepillo monotipo</label>
+                                <label><input type="checkbox" name="control-recommendations" value="Hilo para Brackets"> Hilo para Brackets</label>
+                                <label><input type="checkbox" name="control-recommendations" value="Cera"> Cera</label>
+                                <label><input type="checkbox" name="control-recommendations" value="Limpia lengua"> Limpia lengua</label>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="form-group">
+                                <label><strong>Retiro de Brackets:</strong></label>
+                                <div style="display: flex; gap: 8px; align-items: center; font-size: 0.85rem;">
+                                    <label><input type="checkbox" id="control-removal-sup"> Sup</label>
+                                    <label><input type="checkbox" id="control-removal-inf"> Inf</label>
+                                    <span style="font-size: 0.8rem;">Fecha:</span>
+                                    <input type="date" id="control-removal-date" class="form-control py-1" style="width: 120px;">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label><strong>Colocación de Contención:</strong></label>
+                                <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem;">
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <label><input type="checkbox" id="control-retention-sup"> Sup</label>
+                                        <label><input type="checkbox" id="control-retention-inf"> Inf</label>
+                                        <label><input type="checkbox" id="control-retention-fija"> Fija</label>
+                                        <label><input type="checkbox" id="control-retention-remov"> Remov</label>
+                                    </div>
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <span style="font-size: 0.8rem;">Fecha:</span>
+                                        <input type="date" id="control-retention-date" class="form-control py-1" style="width: 120px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Observaciones, Proxima Cita -->
+                    <div style="border-top: 1px solid var(--border-color); padding-top: 10px;">
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label for="control-observations"><strong>Observaciones / Notas Clínicas:</strong></label>
+                            <textarea id="control-observations" class="form-control" rows="2" placeholder="Detalles de evolución mensual..."></textarea>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="form-group">
+                                <label for="control-next-date"><strong>Próxima cita fecha:</strong></label>
+                                <input type="date" id="control-next-date" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="control-next-time"><strong>Próxima cita hora:</strong></label>
+                                <input type="time" id="control-next-time" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeOrthoControlModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-cloud-arrow-up"></i> Guardar Control</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Tarifario Catalog Modal -->
     <div id="tarifario-modal" class="modal">
