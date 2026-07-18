@@ -292,3 +292,71 @@ export async function deletePatientTreatmentPlan(id) {
     if (error) throw error;
     return true;
 }
+
+// --- ORTHODONTIC CLIENT METHODS ---
+export async function getOrthodonticRecord(patientId) {
+    const { data, error } = await supabase
+        .from('orthodontic_records')
+        .select('*')
+        .eq('patient_id', patientId)
+        .maybeSingle();
+    if (error) {
+        console.error("Error fetching orthodontic record:", error.message);
+        throw error;
+    }
+    return data;
+}
+
+export async function saveOrthodonticRecord(record) {
+    // If record has an id, update it. Otherwise, insert it.
+    if (record.id) {
+        const { data, error } = await supabase
+            .from('orthodontic_records')
+            .update(record)
+            .eq('id', record.id)
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    } else {
+        const { data, error } = await supabase
+            .from('orthodontic_records')
+            .insert([record])
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    }
+}
+
+export async function getOrthodonticControls(patientId) {
+    const { data, error } = await supabase
+        .from('orthodontic_monthly_controls')
+        .select('*')
+        .eq('patient_id', patientId)
+        .order('date', { ascending: false });
+    if (error) {
+        console.error("Error fetching orthodontic controls:", error.message);
+        throw error;
+    }
+    return data;
+}
+
+export async function insertOrthodonticControl(control) {
+    const { data, error } = await supabase
+        .from('orthodontic_monthly_controls')
+        .insert([control])
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+export async function deleteOrthodonticControl(id) {
+    const { error } = await supabase
+        .from('orthodontic_monthly_controls')
+        .delete()
+        .eq('id', id);
+    if (error) throw error;
+    return true;
+}
