@@ -1,0 +1,1714 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Dentistas - Gestión Clínica y Odontológica</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/dashboard.css">
+    <link rel="stylesheet" href="assets/css/odontogram.css">
+</head>
+<body>
+
+    
+    <div id="login-screen" class="screen active">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header" style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 2rem;">
+                    <img src="assets/images/logo.png" alt="Portal Dentistas Logo" class="login-logo-img" style="max-height: 140px; width: auto; margin-bottom: 1rem; filter: drop-shadow(0 4px 8px rgba(184, 134, 11, 0.15)); border-radius: 16px;">
+                    <h1 style="font-size: 1.65rem; font-weight: 800; color: #1c1a17; letter-spacing: 0.5px; margin: 15px 0 0 0;">Sistema <span>Odontológico</span></h1>
+                    <p style="color: #6b6355; font-size: 0.85rem; margin-top: 5px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;">Gestión y Control Clínico</p>
+                </div>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-username"><i class="fa-solid fa-user"></i> Usuario</label>
+                        <input type="text" id="login-username" placeholder="Ingresa tu usuario" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password"><i class="fa-solid fa-lock"></i> Contraseña</label>
+                        <input type="password" id="login-password" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block" id="btn-login-submit">
+                        <span class="btn-text">Iniciar Sesión</span>
+                        <span class="spinner hidden"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
+                    </button>
+                    <div class="error-msg hidden" id="login-error">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Credenciales incorrectas o acceso no autorizado.
+                    </div>
+                </form>
+                <div class="login-footer">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div id="main-workspace" class="screen">
+        
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <i class="fa-solid fa-tooth"></i>
+                <div class="brand-text">
+                    <h2>Portal Dentistas</h2>
+                    <span>Sistema Operativo</span>
+                </div>
+            </div>
+            
+            <div class="user-profile-badge">
+                <div class="avatar"><i class="fa-solid fa-user-doctor"></i></div>
+                <div class="user-info">
+                    <span id="user-display-name">Cargando...</span>
+                    <span id="user-display-role" class="badge">Rol</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-menu">
+                <ul>
+                    
+                    <li class="menu-header">Operaciones</li>
+                    <li id="menu-patients" class="nav-item active"><a href="#" onclick="switchView('patients')"><i class="fa-solid fa-hospital-user"></i> Pacientes</a></li>
+                    <li id="menu-calendar" class="nav-item"><a href="#" onclick="switchView('calendar')"><i class="fa-solid fa-calendar-days"></i> Agenda Dental</a></li>
+                    <li id="menu-reminders" class="nav-item"><a href="#" onclick="switchView('reminders')"><i class="fa-solid fa-bell"></i> Recordatorios</a></li>
+                    
+                    <li class="menu-header clinical-only">Clínica</li>
+                    <li id="menu-odontogram" class="nav-item clinical-only"><a href="#" onclick="switchView('odontogram')"><i class="fa-solid fa-teeth"></i> Odontograma & EHR</a></li>
+                    <li id="menu-treatment-plan" class="nav-item clinical-only"><a href="#" onclick="switchView('treatment-plan')"><i class="fa-solid fa-file-medical"></i> Plan de Tratamiento</a></li>
+                    <li id="menu-budget" class="nav-item clinical-only"><a href="#" onclick="switchView('budget')"><i class="fa-solid fa-receipt"></i> Presupuesto & Descuentos</a></li>
+                    
+                    <li class="menu-header clinical-only">Ortodoncia</li>
+                    <li id="menu-ortho-history" class="nav-item clinical-only"><a href="#" onclick="switchView('ortho-history')"><i class="fa-solid fa-folder-open"></i> Ficha de Ortodoncia</a></li>
+                    <li id="menu-ortho-controls" class="nav-item clinical-only"><a href="#" onclick="switchView('ortho-controls')"><i class="fa-solid fa-calendar-check"></i> Ficha de Control Mensual</a></li>
+                    
+                    <li class="menu-header admin-only">Administración</li>
+                    <li id="menu-users" class="nav-item admin-only"><a href="#" onclick="switchView('users')"><i class="fa-solid fa-users-gear"></i> Gestión Personal</a></li>
+                    <li id="menu-shifts" class="nav-item admin-only"><a href="#" onclick="switchView('shifts')"><i class="fa-solid fa-clock-rotate-left"></i> Horarios Dentistas</a></li>
+                    <li id="menu-tarifario" class="nav-item admin-only"><a href="#" onclick="switchView('tarifario')"><i class="fa-solid fa-file-invoice-dollar"></i> Tarifario Clínico</a></li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button class="btn btn-outline btn-logout" onclick="logout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Cerrar Sesión</button>
+            </div>
+        </aside>
+
+        
+        <main class="content-area">
+            <header class="content-header">
+                <div class="header-left-group" style="display: flex; align-items: center; gap: 1rem;">
+                    <button type="button" id="btn-toggle-sidebar" class="sidebar-toggle-btn" title="Ocultar/Mostrar Menú">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div class="header-title">
+                        <h1 id="view-title">Gestión de Pacientes</h1>
+                        <p id="view-subtitle">Registro y búsqueda de historias clínicas.</p>
+                    </div>
+                </div>
+                <div class="header-meta">
+                    <span class="system-time"><i class="fa-regular fa-clock"></i> <span id="clock-display">00:00:00</span></span>
+                    <span class="system-date"><i class="fa-regular fa-calendar"></i> <span id="date-display">01/01/2026</span></span>
+                </div>
+            </header>
+
+            
+            <section id="view-patients" class="content-section active">
+                <div class="action-bar">
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="patient-search-input" placeholder="Buscar por DNI, Apellido o Nro Historia..." oninput="filterPatients()">
+                    </div>
+                    <button class="btn btn-primary" id="btn-open-patient-modal" onclick="openPatientModal()"><i class="fa-solid fa-user-plus"></i> Nuevo Paciente</button>
+                </div>
+
+                <div class="card card-table">
+                    <div class="table-responsive">
+                        <table class="table" id="patients-table">
+                            <thead>
+                                <tr>
+                                    <th>N° Historia</th>
+                                    <th>DNI</th>
+                                    <th>Nombre Completo</th>
+                                    <th>Fecha de Nacimiento</th>
+                                    <th>Celular</th>
+                                    <th>Email</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="patients-table-body">
+                                
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            
+            <section id="view-calendar" class="content-section">
+                <div class="calendar-controls">
+                    <div class="calendar-nav">
+                        <button class="btn btn-icon" onclick="changeCalendarDay(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                        <input type="date" id="calendar-date-selector" onchange="loadCalendar()">
+                        <button class="btn btn-icon" onclick="changeCalendarDay(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                    <div class="dentist-filter">
+                        <label for="calendar-dentist-filter"><i class="fa-solid fa-user-doctor"></i> Dentista:</label>
+                        <select id="calendar-dentist-filter" onchange="loadCalendar()">
+                            
+                        </select>
+                    </div>
+                    <div class="calendar-legend">
+                        <span class="legend-item"><span class="color-box free"></span> Libre</span>
+                        <span class="legend-item"><span class="color-box booked"></span> Reservado</span>
+                    </div>
+                </div>
+
+                <div class="calendar-grid-container card">
+                    <div class="calendar-header-row">
+                        <div class="time-col-header">Hora</div>
+                        <div class="slot-col-header" id="calendar-grid-header-day">Viernes, 3 de Julio de 2026</div>
+                    </div>
+                    <div class="calendar-grid-rows" id="calendar-grid-rows">
+                        
+                    </div>
+                </div>
+            </section>
+
+            
+            <section id="view-reminders" class="content-section">
+                <div class="alert alert-info">
+                    <i class="fa-solid fa-circle-info"></i> Gestión y registro de recordatorios de citas activas del día de hoy.
+                </div>
+                <div class="card card-table">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Paciente</th>
+                                    <th>DNI</th>
+                                    <th>Hora</th>
+                                    <th>Odontólogo</th>
+                                    <th>Estado de Recordatorio</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reminders-table-body">
+                                
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            
+            <section id="view-odontogram" class="content-section">
+                <div class="ehr-container">
+                    
+                    <div class="ehr-sidebar">
+                        <div class="card patient-selector-card">
+                            <label for="ehr-patient-search"><strong>Seleccionar Paciente para Consulta:</strong></label>
+                            <div class="searchable-select">
+                                <input type="text" id="ehr-patient-search" class="form-control" placeholder="Buscar por Nombre o DNI..." autocomplete="off">
+                                <button type="button" id="ehr-patient-search-clear" class="search-clear-btn hidden">&times;</button>
+                                <div id="ehr-patient-search-results" class="search-results-dropdown hidden"></div>
+                            </div>
+                            <select id="ehr-patient-select" class="hidden">
+                                
+                            </select>
+                        </div>
+
+                        
+                        <div class="card alert-card hidden" id="medical-alerts-card">
+                            <div class="alert-card-header">
+                                <i class="fa-solid fa-triangle-exclamation"></i> ALERTA MÉDICA IMPORTANTE
+                            </div>
+                            <div class="alert-card-body" id="medical-alerts-content">
+                                
+                            </div>
+                        </div>
+
+                        
+                        <div class="card patient-details-card">
+                            <h3>Ficha Clínica</h3>
+                            <div class="detail-grid">
+                                <div><strong>N° Historia:</strong> <span id="ehr-history-number">-</span></div>
+                                <div><strong>DNI:</strong> <span id="ehr-dni">-</span></div>
+                                <div><strong>Edad:</strong> <span id="ehr-age">-</span></div>
+                                <div><strong>Contacto:</strong> <span id="ehr-phone">-</span></div>
+                            </div>
+                            <div class="detail-full">
+                                <strong>Antecedentes Médicos Generales:</strong>
+                                <p id="ehr-general-background" class="text-muted">Ninguno especificado.</p>
+                            </div>
+                        </div>
+
+                        
+                        <div class="card evolution-notes-card">
+                            <div class="card-header-flex">
+                                <h3>Notas de Evolución Clínica</h3>
+                                <span class="badge badge-info"><span id="ehr-notes-count">0</span> Versiones</span>
+                            </div>
+                            
+                            
+                            <form id="add-evolution-note-form" class="mt-3">
+                                <div class="form-group">
+                                    <label for="new-note-text">Nueva Nota de Evolución (Inalterable):</label>
+                                    <textarea id="new-note-text" rows="3" placeholder="Escriba los hallazgos clínicos, diagnóstico o procedimientos realizados en esta sesión..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk"></i> Guardar Nota</button>
+                            </form>
+
+                            
+                            <div class="notes-timeline" id="notes-timeline">
+                                
+                            </div>
+                        </div>
+                    </div>
+
+                    
+                    <div class="ehr-main">
+                        <div class="card odontogram-container-card">
+                            <div class="odontogram-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px;">
+                                <h3 id="odontogram-header-title" style="margin: 0;">Odontograma de Admisión (Inicial)</h3>
+                                <div class="btn-group" id="odontogram-mode-selector" style="display: flex; gap: 5px; background: #e2e8f0; padding: 4px; border-radius: 6px;">
+                                    <button type="button" class="btn btn-sm" id="mode-toggle-baseline" onclick="setOdontogramMode('baseline')" style="padding: 4px 10px; font-size: 0.85rem; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; transition: background var(--transition-fast), color var(--transition-fast);">Inicial</button>
+                                    <button type="button" class="btn btn-sm" id="mode-toggle-evolution" onclick="setOdontogramMode('evolution')" style="padding: 4px 10px; font-size: 0.85rem; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; transition: background var(--transition-fast), color var(--transition-fast);">Evolución</button>
+                                </div>
+                            </div>
+
+                            <div class="odontogram-help alert alert-info py-2 my-2">
+                                <span id="odontogram-help-text">Configure el estado dental de ingreso del paciente. Al congelar y guardar, este registro inicial se volverá inalterable legalmente.</span>
+                            </div>
+
+                            
+                            <div class="odontogram-canvas">
+                                
+                                <div class="teeth-row-group">
+                                    <span class="row-label">Arcada Superior Adulto (18 - 28 FDI)</span>
+                                    <div class="teeth-row" id="odontogram-adult-upper">
+                                        
+                                    </div>
+                                </div>
+
+                                
+                                <div class="teeth-row-group child-row">
+                                    <span class="row-label">Arcada Superior Infantil (55 - 65 FDI)</span>
+                                    <div class="teeth-row" id="odontogram-child-upper">
+                                        
+                                    </div>
+                                </div>
+
+                                
+                                <div class="teeth-row-group child-row">
+                                    <span class="row-label">Arcada Inferior Infantil (85 - 75 FDI)</span>
+                                    <div class="teeth-row" id="odontogram-child-lower">
+                                        
+                                    </div>
+                                </div>
+
+                                
+                                <div class="teeth-row-group">
+                                    <span class="row-label">Arcada Inferior Adulto (48 - 38 FDI)</span>
+                                    <div class="teeth-row" id="odontogram-adult-lower">
+                                        
+                                    </div>
+                                </div>
+                            </div>
+
+                            
+                            <div class="odontogram-footer mt-4" style="display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap;">
+                                <div id="baseline-actions">
+                                    <button class="btn btn-warning" id="btn-save-baseline" onclick="saveBaselineState()"><i class="fa-solid fa-lock"></i> Congelar & Guardar Estado Inicial</button>
+                                    <span id="baseline-saved-indicator" class="text-success hidden"><i class="fa-solid fa-circle-check"></i> Estado Inicial Legal Congelado</span>
+                                </div>
+                                <button type="button" class="btn btn-primary" onclick="switchView('treatment-plan')">
+                                    Ir al Plan de Tratamiento <i class="fa-solid fa-arrow-right" style="margin-left: 5px;"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            
+            <section id="view-users" class="content-section">
+                <div class="action-bar">
+                    <h3>Personal de la Clínica</h3>
+                    <button class="btn btn-primary" onclick="openUserModal()"><i class="fa-solid fa-user-plus"></i> Agregar Personal</button>
+                </div>
+                <div class="card card-table">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Usuario</th>
+                                    <th>Rol</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            
+            <section id="view-shifts" class="content-section">
+                <div class="action-bar">
+                    <h3>Horarios y Turnos Operativos de Odontólogos</h3>
+                    <button class="btn btn-primary" onclick="openShiftModal()"><i class="fa-solid fa-calendar-plus"></i> Configurar Turno</button>
+                </div>
+                <div class="card card-table">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Odontólogo</th>
+                                    <th>Día de la Semana</th>
+                                    <th>Hora Entrada</th>
+                                    <th>Hora Salida</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="shifts-table-body">
+                                
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            
+            <section id="view-treatment-plan" class="content-section">
+                <div class="action-bar" style="margin-bottom: 20px;">
+                    <h3>Plan de Tratamiento Operativo</h3>
+                    <div style="font-weight: 600;">
+                        <span>Paciente Seleccionado: </span>
+                        <span id="treatment-plan-patient-name" class="text-primary">-</span>
+                    </div>
+                </div>
+
+                <div class="treatment-plan-split" style="display: grid; grid-template-columns: 1.2fr 1.0fr; gap: 20px; align-items: start;">
+                    
+                    <div class="card" style="padding: 20px; max-height: 520px; overflow-y: auto;">
+                        <h4 style="margin-bottom: 15px;"><i class="fa-solid fa-file-medical"></i> Diagnóstico Clínico Referencial</h4>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 25%;">Pieza</th>
+                                        <th>Hallazgos Registrados (Evolución & Baseline)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="treatment-plan-diagnoses-tbody">
+                                    
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    
+                    <div class="card" style="padding: 20px;">
+                        <h4 style="margin-bottom: 15px;"><i class="fa-solid fa-list-check"></i> Procedimientos Planificados</h4>
+                        
+                        
+                        <form id="add-treatment-plan-form" style="background-color: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                            <div class="form-row">
+                                <div class="form-group col-12">
+                                    <label for="plan-treatment-select" style="font-weight: 600;">Procedimiento Clínico (Catálogo) *</label>
+                                    <select id="plan-treatment-select" class="form-control" required>
+                                        <option value="">-- Seleccione un tratamiento --</option>
+                                        
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row mt-2">
+                                <div class="form-group col-6">
+                                    <label for="plan-tooth-select" style="font-weight: 600;">Pieza FDI (Opcional)</label>
+                                    <select id="plan-tooth-select" class="form-control">
+                                        <option value="">-- General (Toda la boca) --</option>
+                                        
+                                    </select>
+                                </div>
+                                <div class="form-group col-6" style="display: flex; align-items: flex-end;">
+                                    <button type="submit" class="btn btn-primary w-100" style="padding: 8.5px;"><i class="fa-solid fa-plus"></i> Agregar</button>
+                                </div>
+                            </div>
+                        </form>
+
+                        
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Procedimiento</th>
+                                        <th>Pieza</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="treatment-plan-table-body">
+                                    
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
+                            <button type="button" class="btn btn-primary" onclick="switchView('budget')">
+                                Ir a Presupuesto & Descuentos <i class="fa-solid fa-arrow-right" style="margin-left: 5px;"></i>
+                            </button>
+                        </div>
+
+                        
+                        <div class="plan-summaries mt-3" style="background: #f1f5f9; padding: 15px; border-radius: 8px; display: none;">
+                            <div>
+                                <h5 style="margin: 0 0 5px 0; color: #475569;">Total en Soles (S/)</h5>
+                                <div style="font-size: 0.9rem; font-weight: 600; display: flex; gap: 20px;">
+                                    <span>Pendiente: <span id="plan-total-soles-pending" class="text-warning">S/ 0.00</span></span>
+                                    <span>Completado: <span id="plan-total-soles-done" class="text-success">S/ 0.00</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            
+            <section id="view-tarifario" class="content-section">
+                <div class="action-bar">
+                    <h3>Tarifario Clínico y Catálogo</h3>
+                    <button class="btn btn-primary" onclick="openTarifarioModal()"><i class="fa-solid fa-plus"></i> Nuevo Procedimiento</button>
+                </div>
+
+                <div class="card card-table" style="max-height: calc(100vh - 220px); overflow-y: auto;">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Categoría</th>
+                                    <th>Procedimiento</th>
+                                    <th>Precio Soles (S/)</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tarifario-table-body">
+                                
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            
+            <section id="view-budget" class="content-section">
+                <div class="action-bar" style="margin-bottom: 20px;">
+                    <h3>Presupuesto y Finanzas</h3>
+                    <div style="font-weight: 600;">
+                        <span>Paciente Seleccionado: </span>
+                        <span id="budget-patient-name-header" class="text-primary">-</span>
+                    </div>
+                </div>
+
+                <div class="card patient-selector-card" style="margin-bottom: 20px; max-width: 450px; padding: 15px; display: none;">
+                    <label for="budget-patient-search"><strong>Buscar Paciente:</strong></label>
+                    <div class="searchable-select">
+                        <input type="text" id="budget-patient-search" class="form-control" placeholder="Buscar por Nombre o DNI..." autocomplete="off">
+                        <button type="button" id="budget-patient-search-clear" class="search-clear-btn hidden">&times;</button>
+                        <div id="budget-patient-search-results" class="search-results-dropdown hidden"></div>
+                    </div>
+                    <select id="budget-patient-select" class="hidden">
+                        
+                    </select>
+                </div>
+
+                <div class="budget-content-grid" style="display: grid; grid-template-columns: 1.2fr 1.0fr; gap: 20px; align-items: start;">
+                    
+                    <div class="card" style="padding: 20px;">
+                        <h4 style="margin-bottom: 15px;"><i class="fa-solid fa-calculator"></i> Detalle de Procedimientos y Descuentos</h4>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Procedimiento</th>
+                                        <th>Pieza</th>
+                                        <th>Costo Base (S/)</th>
+                                        <th style="width: 120px;">Descuento (%)</th>
+                                        <th>Descuento (S/)</th>
+                                        <th>Precio Final (S/)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="budget-table-body">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            Seleccione un paciente para cargar su presupuesto.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="margin-top: 15px; display: flex; justify-content: flex-end;">
+                            <button type="button" class="btn btn-primary" id="btn-save-budget-discounts"><i class="fa-solid fa-floppy-disk"></i> Guardar Descuentos</button>
+                        </div>
+                    </div>
+
+                    
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <div class="card" style="padding: 20px;">
+                            <h4 style="margin-bottom: 15px;"><i class="fa-solid fa-file-invoice-dollar"></i> Resumen de Cuenta</h4>
+                            <div style="display: flex; flex-direction: column; gap: 15px; background-color: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+                                    <span style="font-weight: 500; color: #475569;">Subtotal Base:</span>
+                                    <span id="budget-subtotal" style="font-weight: 600; color: #1e293b;">S/ 0.00</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+                                    <span style="font-weight: 500; color: #e11d48;">(-) Descuento de Procedimientos:</span>
+                                    <span id="budget-total-discount" style="font-weight: 600; color: #e11d48;">S/ 0.00</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+                                    <span style="font-weight: 500; color: #d97706;">(-) Abono Separación Cita (Adelantado):</span>
+                                    <span id="budget-deposit" style="font-weight: 600; color: #d97706;">S/ 0.00</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 5px;">
+                                    <span style="font-size: 1.2rem; font-weight: 700; color: #0f172a;">Total Neto a Pagar:</span>
+                                    <span id="budget-final-total" style="font-size: 1.3rem; font-weight: 800; color: #16a34a;">S/ 0.00</span>
+                                </div>
+                            </div>
+
+                            <div id="budget-deposit-notice" class="alert alert-success mt-3 hidden">
+                                <i class="fa-solid fa-circle-info"></i> Se ha detectado un abono de <strong>S/ 50.00</strong> por separación previa de cita de este paciente, el cual se ha restado del total final.
+                            </div>
+                        </div>
+
+                        
+                        <div class="card export-card" style="padding: 20px;">
+                            <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap;">
+                                <h4 style="margin: 0;"><i class="fa-solid fa-print"></i> Imprimir Hoja de Presupuesto</h4>
+                                <button id="btn-export-pdf" class="btn btn-secondary btn-sm" onclick="exportPatientPDF()" disabled>
+                                    <i class="fa-solid fa-print"></i> Imprimir Presupuesto
+                                </button>
+                            </div>
+                            <p class="text-muted text-sm mt-2" id="export-help-text">Permite generar una hoja de presupuesto oficial para impresión o guardado físico.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            
+            <section id="view-ortho-history" class="content-section">
+                <div class="action-bar" style="margin-bottom: 20px;">
+                    <h3>Historia Clínica de Ortodoncia</h3>
+                    <div style="font-weight: 600;">
+                        <span>Paciente Seleccionado: </span>
+                        <span id="ortho-history-patient-name" class="text-primary">-</span>
+                    </div>
+                </div>
+
+                <div id="ortho-history-empty" class="card text-center py-5" style="max-width: 800px; margin: 0 auto; padding: 30px;">
+                    <i class="fa-solid fa-folder-open" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1.5rem;"></i>
+                    <p class="text-muted" style="font-size: 1.1rem; margin-bottom: 1rem;">Seleccione un paciente en la ficha clínica / odontograma primero.</p>
+                </div>
+
+                <div id="ortho-history-container" class="hidden" style="max-width: 1000px; margin: 0 auto;">
+                    <form id="ortho-history-form">
+                        <input type="hidden" id="ortho-record-id">
+                        
+                        <div class="card" style="padding: 20px; margin-bottom: 20px;">
+                            <div class="ortho-tabs" style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; flex-wrap: wrap;">
+                                <button type="button" class="btn btn-sm btn-tab active" onclick="switchOrthoTab('ortho-tab-clinical', this)"><i class="fa-solid fa-user-doctor"></i> 1. Examen Clínico</button>
+                                <button type="button" class="btn btn-sm btn-tab btn-outline" onclick="switchOrthoTab('ortho-tab-models', this)"><i class="fa-solid fa-teeth"></i> 2. Análisis de Modelos</button>
+                                <button type="button" class="btn btn-sm btn-tab btn-outline" onclick="switchOrthoTab('ortho-tab-diagnoses', this)"><i class="fa-solid fa-stethoscope"></i> 3. Hábitos y Diagnósticos</button>
+                            </div>
+
+                            
+                            <div id="ortho-tab-clinical" class="ortho-tab-content">
+                                <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px; color: #1b4332;">Información de Representante & Consulta</h4>
+                                <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                                    <div class="form-group">
+                                        <label for="ortho-representative">Apoderado / Representante (Si corresponde)</label>
+                                        <input type="text" id="ortho-representative" class="form-control" placeholder="Nombre completo del apoderado">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-relationship">Parentesco / Relación</label>
+                                        <input type="text" id="ortho-relationship" class="form-control" placeholder="Ej. Padre, Madre, Tutor">
+                                    </div>
+                                    <div class="form-group" style="grid-column: span 2;">
+                                        <label for="ortho-consultation-motif">Motivo de Consulta Ortodoncia *</label>
+                                        <textarea id="ortho-consultation-motif" class="form-control" rows="2" required placeholder="Describa el motivo de consulta expresado por el paciente..."></textarea>
+                                    </div>
+                                </div>
+
+                                <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px; color: #1b4332;">Historia Dental</h4>
+                                <div class="form-grid" style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 20px;">
+                                    <div class="form-group">
+                                        <label for="ortho-eruption-chronology">Cronología de erupción (Dentición primaria y permanente)</label>
+                                        <input type="text" id="ortho-eruption-chronology" class="form-control" placeholder="Ej. Retrasada, Normal, etc.">
+                                    </div>
+                                    <div class="form-grid" style="display: grid; grid-template-columns: auto 1fr; gap: 15px; align-items: center;">
+                                        <div class="form-group">
+                                            <label style="display: block; margin-bottom: 5px;">Alteraciones estructurales, forma o número?</label>
+                                            <div style="display: flex; gap: 15px;">
+                                                <label><input type="radio" name="ortho-structural-alterations" value="Si"> Sí</label>
+                                                <label><input type="radio" name="ortho-structural-alterations" value="No" checked> No</label>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="ortho-structural-alterations-desc">Descripción de alteraciones</label>
+                                            <input type="text" id="ortho-structural-alterations-desc" class="form-control" placeholder="Describa las alteraciones en caso de marcar Sí">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px; color: #1b4332;">Examen Clínico Facial y Funcional</h4>
+                                <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                                    <div class="form-group">
+                                        <label for="ortho-symmetry-midline">Simetría con respecto a la línea media</label>
+                                        <input type="text" id="ortho-symmetry-midline" class="form-control" placeholder="Ej. Sí, Desviado 2mm a la derecha">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-symmetry-thirds">Simetría de los tercios faciales</label>
+                                        <input type="text" id="ortho-symmetry-thirds" class="form-control" placeholder="Ej. Simétricos, Tercio inferior aumentado">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-face-form">Forma de la cara</label>
+                                        <select id="ortho-face-form" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Braquifacial">Braquifacial</option>
+                                            <option value="Mesofacial">Mesofacial</option>
+                                            <option value="Dolicofacial">Dolicofacial</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-profile">Perfil</label>
+                                        <select id="ortho-profile" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Cóncavo">Cóncavo</option>
+                                            <option value="Recto">Recto</option>
+                                            <option value="Convexo">Convexo</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-lips">Labios</label>
+                                        <select id="ortho-lips" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Incompetentes">Incompetentes</option>
+                                            <option value="Hipotónicos">Hipotónicos</option>
+                                            <option value="Hipertónicos">Hipertónicos</option>
+                                            <option value="Normales">Normales</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-chin-masseter">Mentón / Masetero</label>
+                                        <select id="ortho-chin-masseter" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Hipertónico">Hipertónico</option>
+                                            <option value="Normal">Normal</option>
+                                            <option value="Hipotónico">Hipotónico</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-nose-size">Tamaño de la nariz</label>
+                                        <select id="ortho-nose-size" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Pequeña">Pequeña</option>
+                                            <option value="Mediana">Mediana</option>
+                                            <option value="Grande">Grande</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-ears-insertion">Inserción de orejas</label>
+                                        <select id="ortho-ears-insertion" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Baja">Baja</option>
+                                            <option value="Normal">Normal</option>
+                                            <option value="Alta">Alta</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-lip-frenum">Frenillo labial</label>
+                                        <select id="ortho-lip-frenum" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Normal">Normal</option>
+                                            <option value="Baja">Baja</option>
+                                            <option value="Ancho">Ancho</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-lingual-frenum">Frenillo lingual</label>
+                                        <select id="ortho-lingual-frenum" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Normal">Normal</option>
+                                            <option value="Corto">Corto</option>
+                                            <option value="Ancho">Ancho</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-palate">Paladar</label>
+                                        <select id="ortho-palate" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Llano">Llano</option>
+                                            <option value="Normal">Normal</option>
+                                            <option value="Profundo">Profundo</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-tongue-volume">Volumen de la lengua</label>
+                                        <select id="ortho-tongue-volume" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Normal">Normal</option>
+                                            <option value="Aumentado">Aumentado</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-tongue-position">Posición de la lengua</label>
+                                        <select id="ortho-tongue-position" class="form-control">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Normal">Normal</option>
+                                            <option value="Protruída">Protruída</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Desviaciones ATM</label>
+                                        <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem;">
+                                            <label><input type="checkbox" name="ortho-atm" value="Apertura"> Apertura</label>
+                                            <label><input type="checkbox" name="ortho-atm" value="Cierre"> Cierre</label>
+                                            <label><input type="checkbox" name="ortho-atm" value="Ruidos"> Ruidos</label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Contactos Prematuros</label>
+                                        <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem;">
+                                            <label><input type="checkbox" name="ortho-contacts" value="Caninos"> Caninos</label>
+                                            <label><input type="checkbox" name="ortho-contacts" value="Molares"> Molares</label>
+                                            <label><input type="checkbox" name="ortho-contacts" value="Incisivos"> Incisivos</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            
+                            <div id="ortho-tab-models" class="ortho-tab-content hidden">
+                                <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px; color: #1b4332;">Análisis de Modelos</h4>
+                                <div class="table-responsive" style="margin-bottom: 20px;">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr style="background-color: #f7f4ed;">
+                                                <th style="width: 30%;">Característica / Medición</th>
+                                                <th style="width: 35%;">Arcada Superior</th>
+                                                <th style="width: 35%;">Arcada Inferior</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="ortho-models-table-body">
+                                            
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                                    <div class="form-group">
+                                        <label style="font-weight: 600;">Overjet (mm)</label>
+                                        <div style="display: flex; gap: 10px; align-items: center;">
+                                            <input type="text" id="ortho-overjet" class="form-control" style="width: 80px;" placeholder="Ej. 3">
+                                            <select id="ortho-overjet-type" class="form-control">
+                                                <option value="Normal">Normal</option>
+                                                <option value="Aumentado">Aumentado</option>
+                                                <option value="A tope">A tope</option>
+                                                <option value="Inverso">Inverso</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label style="font-weight: 600;">Overbite (mm)</label>
+                                        <div style="display: flex; gap: 10px; align-items: center;">
+                                            <input type="text" id="ortho-overbite" class="form-control" style="width: 80px;" placeholder="Ej. 2">
+                                            <select id="ortho-overbite-type" class="form-control">
+                                                <option value="Normal">Normal</option>
+                                                <option value="Mordida abierta">Mordida abierta</option>
+                                                <option value="Mordida profunda">Mordida profunda</option>
+                                                <option value="En paladar">En paladar</option>
+                                                <option value="En cíngulo">En cíngulo</option>
+                                                <option value="Incompleto">Incompleto</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            
+                            <div id="ortho-tab-diagnoses" class="ortho-tab-content hidden">
+                                <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+                                    <div>
+                                        <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px; color: #1b4332;">Examen Radiográfico</h4>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.9rem;">
+                                            <label><input type="checkbox" name="ortho-xray" value="Edad dental"> Edad dental</label>
+                                            <label><input type="checkbox" name="ortho-xray" value="Supernumerarios"> Supernumerarios</label>
+                                            <label><input type="checkbox" name="ortho-xray" value="Ausencia de germen"> Ausencia de germen</label>
+                                            <label><input type="checkbox" name="ortho-xray" value="Dientes incluidos"> Dientes incluidos</label>
+                                            <label><input type="checkbox" name="ortho-xray" value="Pérdidas prematuras"> Pérdidas prematuras</label>
+                                            <label><input type="checkbox" name="ortho-xray" value="Otras Alteraciones"> Otras Alteraciones</label>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px; color: #1b4332;">Hábitos Registrados</h4>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.9rem; margin-bottom: 10px;">
+                                            <label><input type="checkbox" name="ortho-habits" value="Deglución atípica"> Deglución atípica</label>
+                                            <label><input type="checkbox" name="ortho-habits" value="Respiración bucal"> Respiración bucal</label>
+                                            <label><input type="checkbox" name="ortho-habits" value="Bruxismo"> Bruxismo</label>
+                                            <label><input type="checkbox" name="ortho-habits" value="Onicofagia"> Onicofagia</label>
+                                            <label><input type="checkbox" name="ortho-habits" value="Succión digital"> Succión digital</label>
+                                            <label><input type="checkbox" name="ortho-habits" value="Queilofagia"> Queilofagia</label>
+                                            <label><input type="checkbox" name="ortho-habits" value="Succión de Chupón"> Succión de Chupón</label>
+                                            <label><input type="checkbox" name="ortho-habits" value="Atrapamiento Labial"> Atrapamiento Labial</label>
+                                            <label><input type="checkbox" name="ortho-habits" value="Protrusión lingual"> Protrusión lingual</label>
+                                        </div>
+                                        <div class="form-group" style="margin-bottom: 8px;">
+                                            <label for="ortho-habits-other" style="font-size: 0.85rem;">Otros hábitos</label>
+                                            <input type="text" id="ortho-habits-other" class="form-control py-1" placeholder="Especificar...">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="ortho-habits-frequency" style="font-size: 0.85rem;">Frecuencia e intensidad</label>
+                                            <input type="text" id="ortho-habits-frequency" class="form-control py-1" placeholder="Ej. Nocturno, diario">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px; color: #1b4332;">Diagnóstico & Plan de Trabajo</h4>
+                                <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                                    <div class="form-group">
+                                        <label for="ortho-dental-diagnosis">Diagnóstico Dentario</label>
+                                        <textarea id="ortho-dental-diagnosis" class="form-control" rows="3"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-cephalometric-diagnosis">Diagnóstico Cefalométrico</label>
+                                        <textarea id="ortho-cephalometric-diagnosis" class="form-control" rows="3"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-problems-list">Lista de Problemas</label>
+                                        <textarea id="ortho-problems-list" class="form-control" rows="3"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-treatment-objectives">Objetivos del Tratamiento</label>
+                                        <textarea id="ortho-treatment-objectives" class="form-control" rows="3"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-treatment-plan">Plan de Tratamiento</label>
+                                        <textarea id="ortho-treatment-plan" class="form-control" rows="3"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ortho-interconsultations">Interconsultas Realizadas</label>
+                                        <textarea id="ortho-interconsultations" class="form-control" rows="3"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 15px;">
+                                <button type="submit" class="btn btn-success"><i class="fa-solid fa-cloud-arrow-up"></i> Guardar Ficha Ortodoncia</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            
+            <section id="view-ortho-controls" class="content-section">
+                <div class="action-bar" style="margin-bottom: 20px;">
+                    <h3>Seguimiento y Control de Ortodoncia</h3>
+                    <div style="font-weight: 600;">
+                        <span>Paciente Seleccionado: </span>
+                        <span id="ortho-controls-patient-name" class="text-primary">-</span>
+                    </div>
+                </div>
+
+                <div id="ortho-controls-empty" class="card text-center py-5" style="max-width: 800px; margin: 0 auto; padding: 30px;">
+                    <i class="fa-solid fa-calendar-check" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1.5rem;"></i>
+                    <p class="text-muted" style="font-size: 1.1rem; margin-bottom: 1rem;">Seleccione un paciente en la ficha clínica / odontograma primero.</p>
+                </div>
+
+                <div id="ortho-controls-container" class="hidden" style="max-width: 1000px; margin: 0 auto;">
+                    <div class="card" style="padding: 20px; margin-bottom: 20px;">
+                        <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h4 style="margin: 0;"><i class="fa-solid fa-list"></i> Historial de Controles Mensuales</h4>
+                            <button class="btn btn-primary btn-sm" onclick="openOrthoControlModal()"><i class="fa-solid fa-plus"></i> Nuevo Control Mensual</button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Hora</th>
+                                        <th>Dr. Tratante</th>
+                                        <th>Tipo Visita</th>
+                                        <th>Observaciones</th>
+                                        <th class="text-center" style="width: 150px;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ortho-controls-table-body">
+                                    
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+        <div id="print-iframe-container" style="display: none;"></div>
+    </div>
+
+    
+
+    
+    <div id="ortho-control-modal" class="modal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3>Nuevo Control y Evolución Ortodoncia</h3>
+                <span class="close-btn" onclick="closeOrthoControlModal()">&times;</span>
+            </div>
+            <form id="ortho-control-form">
+                <input type="hidden" id="ortho-control-id">
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto; display: flex; flex-direction: column; gap: 1.25rem;">
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 15px;">
+                        <div class="form-group">
+                            <label for="control-date"><strong>Fecha *</strong></label>
+                            <input type="date" id="control-date" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="control-time"><strong>Hora *</strong></label>
+                            <input type="time" id="control-time" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label><strong>Tipo de Visita *</strong></label>
+                            <div style="display: flex; gap: 10px; margin-top: 5px;">
+                                <label><input type="radio" name="control-visit-type" value="Inicio de tratamiento" required> Inicio</label>
+                                <label><input type="radio" name="control-visit-type" value="Control" checked> Control</label>
+                                <label><input type="radio" name="control-visit-type" value="Otros"> Otros</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    
+                    <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label for="control-dentist">Dr. Tratante</label>
+                            <input type="text" id="control-dentist" class="form-control" placeholder="Nombre del odontólogo">
+                        </div>
+                        <div class="form-group">
+                            <label for="control-cop">C.O.P.</label>
+                            <input type="text" id="control-cop" class="form-control" placeholder="N° de colegiatura">
+                        </div>
+                    </div>
+
+                    <h4 style="border-bottom: 2px solid #e2d7be; padding-bottom: 5px; margin-bottom: 5px; color: #1b4332;">Trabajo Realizado</h4>
+
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="form-group">
+                                <label><strong>Separadores:</strong></label>
+                                <div style="display: flex; gap: 12px; font-size: 0.9rem;">
+                                    <label><input type="checkbox" id="control-sep-sup"> Superior</label>
+                                    <label><input type="checkbox" id="control-sep-inf"> Inferior</label>
+                                    <label><input type="checkbox" id="control-sep-none"> No requiere</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label><strong>Cementado de Brackets:</strong></label>
+                                <div style="display: flex; gap: 12px; font-size: 0.9rem;">
+                                    <label><input type="checkbox" id="control-brac-sup"> Superior</label>
+                                    <label><input type="checkbox" id="control-brac-inf"> Inferior</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="form-group">
+                                <label><strong>Tubos:</strong></label>
+                                <div style="display: flex; gap: 8px; align-items: center; font-size: 0.85rem;">
+                                    <label><input type="checkbox" id="control-tubes-sup"> Sup</label>
+                                    <label><input type="checkbox" id="control-tubes-inf"> Inf</label>
+                                    <label><input type="checkbox" id="control-tubes-none"> No req</label>
+                                    <input type="text" id="control-tubes-motif" class="form-control py-1" style="flex-grow: 1; padding: 2px 6px;" placeholder="Motivo...">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label><strong>Bandas:</strong></label>
+                                <div style="display: flex; gap: 8px; align-items: center; font-size: 0.85rem;">
+                                    <label><input type="checkbox" id="control-bands-sup"> Sup</label>
+                                    <label><input type="checkbox" id="control-bands-inf"> Inf</label>
+                                    <label><input type="checkbox" id="control-bands-none"> No req</label>
+                                    <input type="text" id="control-bands-motif" class="form-control py-1" style="flex-grow: 1; padding: 2px 6px;" placeholder="Motivo...">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label for="control-arch-upper"><strong>Arco superior detalles:</strong></label>
+                            <input type="text" id="control-arch-upper" class="form-control" placeholder="Ej. 0.14 NiTi">
+                        </div>
+                        <div class="form-group">
+                            <label for="control-arch-lower"><strong>Arco inferior detalles:</strong></label>
+                            <input type="text" id="control-arch-lower" class="form-control" placeholder="Ej. 0.14 NiTi">
+                        </div>
+                    </div>
+
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label><strong>Uso de ligas intermaxilares:</strong></label>
+                            <div style="display: flex; gap: 10px; align-items: center; font-size: 0.9rem;">
+                                <label><input type="radio" name="control-ligas-use" value="SI"> Sí</label>
+                                <label><input type="radio" name="control-ligas-use" value="NO" checked> No</label>
+                                <span style="font-size: 0.8rem;">n°:</span>
+                                <input type="text" id="control-ligas-use-num" class="form-control py-1" style="width: 60px;" placeholder="Ej. 1/8">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label><strong>Paciente utiliza ligas intermaxilares:</strong></label>
+                            <div style="display: flex; gap: 10px; align-items: center; font-size: 0.9rem;">
+                                <label><input type="radio" name="control-ligas-patient" value="SI"> Sí</label>
+                                <label><input type="radio" name="control-ligas-patient" value="NO" checked> No</label>
+                                <input type="text" id="control-ligas-patient-motif" class="form-control py-1" style="flex-grow: 1;" placeholder="Motivo...">
+                            </div>
+                        </div>
+                    </div>
+
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px;">
+                        <div class="form-group">
+                            <label><strong>Cambio de Elastic:</strong></label>
+                            <div style="display: flex; gap: 15px; margin-top: 5px;">
+                                <label><input type="radio" name="control-elastic-change" value="SI" checked> Sí</label>
+                                <label><input type="radio" name="control-elastic-change" value="NO"> No</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label><strong>Repegado:</strong></label>
+                            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem;">
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <label style="width: 110px;"><input type="checkbox" id="control-rebound-brac"> Brackets</label>
+                                    <input type="text" id="control-rebound-brac-pieces" class="form-control py-1" style="flex-grow: 1;" placeholder="Piezas (Ej. 11, 23)">
+                                </div>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <label style="width: 110px;"><input type="checkbox" id="control-rebound-tubes"> Tubos</label>
+                                    <input type="text" id="control-rebound-tubes-pieces" class="form-control py-1" style="flex-grow: 1;" placeholder="Piezas (Ej. 36, 46)">
+                                </div>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <label style="width: 110px;"><input type="checkbox" id="control-rebound-bands"> Bandas</label>
+                                    <input type="text" id="control-rebound-bands-pieces" class="form-control py-1" style="flex-grow: 1;" placeholder="Piezas">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="form-group">
+                                <label><strong>Higiene del Paciente:</strong></label>
+                                <div style="display: flex; gap: 10px; flex-direction: column; font-size: 0.9rem; margin-top: 4px;">
+                                    <label><input type="radio" name="control-hygiene" value="Buena" checked> Buena</label>
+                                    <label><input type="radio" name="control-hygiene" value="Mala"> Mala</label>
+                                    <label><input type="checkbox" id="control-hygiene-profilaxis"> Se deriva a profilaxis</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label><strong>Presencia de Caries:</strong></label>
+                                <div style="display: flex; gap: 10px; flex-direction: column; font-size: 0.9rem; margin-top: 4px;">
+                                    <label><input type="radio" name="control-caries" value="NO" checked> No</label>
+                                    <label><input type="radio" name="control-caries" value="SI"> Sí</label>
+                                    <label><input type="checkbox" id="control-caries-cure"> Se deriva a curar</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label><strong>Se deriva a:</strong></label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.85rem; margin-top: 4px;">
+                                <label><input type="checkbox" name="control-referral" value="Periodoncia"> Periodoncia</label>
+                                <label><input type="checkbox" name="control-referral" value="Odontopediatría"> Odontopediatría</label>
+                                <label><input type="checkbox" name="control-referral" value="Odontología general"> Odontología general</label>
+                                <label><input type="checkbox" name="control-referral" value="Cirugía Maxilar"> Cirugía Maxilar</label>
+                                <label><input type="checkbox" name="control-referral" value="Endodoncia"> Endodoncia</label>
+                                <label><input type="checkbox" name="control-referral" value="Rehabilitación Oral"> Reh. Oral</label>
+                                <label><input type="checkbox" name="control-referral" value="Implantología"> Implantología</label>
+                                <label><input type="checkbox" name="control-referral" value="Estética Dental"> Estética Dental</label>
+                                <label><input type="checkbox" name="control-referral" value="ATM"> ATM</label>
+                            </div>
+                            <input type="text" id="control-referral-specs" class="form-control mt-2 py-1" placeholder="Especificaciones de la derivación...">
+                        </div>
+                    </div>
+
+                    
+                    <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                        <div class="form-group">
+                            <label><strong>Recomendaciones para mantenimiento y limpieza:</strong></label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.85rem; margin-top: 4px;">
+                                <label><input type="checkbox" name="control-recommendations" value="Pasta dental"> Pasta dental</label>
+                                <label><input type="checkbox" name="control-recommendations" value="Colutorio"> Colutorio</label>
+                                <label><input type="checkbox" name="control-recommendations" value="Hilo dental"> Hilo dental</label>
+                                <label><input type="checkbox" name="control-recommendations" value="Interproximal"> Interproximal</label>
+                                <label><input type="checkbox" name="control-recommendations" value="Cepillo ortodóntico"> Cepillo ortodóntico</label>
+                                <label><input type="checkbox" name="control-recommendations" value="Cepillo monotipo"> Cepillo monotipo</label>
+                                <label><input type="checkbox" name="control-recommendations" value="Hilo para Brackets"> Hilo para Brackets</label>
+                                <label><input type="checkbox" name="control-recommendations" value="Cera"> Cera</label>
+                                <label><input type="checkbox" name="control-recommendations" value="Limpia lengua"> Limpia lengua</label>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="form-group">
+                                <label><strong>Retiro de Brackets:</strong></label>
+                                <div style="display: flex; gap: 8px; align-items: center; font-size: 0.85rem;">
+                                    <label><input type="checkbox" id="control-removal-sup"> Sup</label>
+                                    <label><input type="checkbox" id="control-removal-inf"> Inf</label>
+                                    <span style="font-size: 0.8rem;">Fecha:</span>
+                                    <input type="date" id="control-removal-date" class="form-control py-1" style="width: 120px;">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label><strong>Colocación de Contención:</strong></label>
+                                <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem;">
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <label><input type="checkbox" id="control-retention-sup"> Sup</label>
+                                        <label><input type="checkbox" id="control-retention-inf"> Inf</label>
+                                        <label><input type="checkbox" id="control-retention-fija"> Fija</label>
+                                        <label><input type="checkbox" id="control-retention-remov"> Remov</label>
+                                    </div>
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <span style="font-size: 0.8rem;">Fecha:</span>
+                                        <input type="date" id="control-retention-date" class="form-control py-1" style="width: 120px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    
+                    <div style="border-top: 1px solid var(--border-color); padding-top: 10px;">
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label for="control-observations"><strong>Observaciones / Notas Clínicas:</strong></label>
+                            <textarea id="control-observations" class="form-control" rows="2" placeholder="Detalles de evolución mensual..."></textarea>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="form-group">
+                                <label for="control-next-date"><strong>Próxima cita fecha:</strong></label>
+                                <input type="date" id="control-next-date" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="control-next-time"><strong>Próxima cita hora:</strong></label>
+                                <input type="time" id="control-next-time" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeOrthoControlModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-cloud-arrow-up"></i> Guardar Control</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    
+    <div id="tarifario-modal" class="modal">
+        <div class="modal-content modal-md">
+            <div class="modal-header">
+                <h3 id="tarifario-modal-title">Gestión de Procedimiento</h3>
+                <span class="close-btn" onclick="closeTarifarioModal()">&times;</span>
+            </div>
+            <form id="tarifario-form">
+                <input type="hidden" id="tarifario-item-id">
+                <div class="modal-body" style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="tarifario-nombre" style="font-weight: 600;">Nombre del Procedimiento *</label>
+                        <input type="text" id="tarifario-nombre" class="form-control" required placeholder="Ej. Endodoncia Monorradicular">
+                    </div>
+                    <div class="form-group">
+                        <label for="tarifario-categoria" style="font-weight: 600;">Categoría *</label>
+                        <select id="tarifario-categoria" class="form-control" required>
+                            <option value="Preventiva">Preventiva</option>
+                            <option value="Restauradora">Restauradora</option>
+                            <option value="Endodoncia">Endodoncia</option>
+                            <option value="Cirugía">Cirugía</option>
+                            <option value="Rehabilitación">Rehabilitación</option>
+                            <option value="Estética">Estética</option>
+                            <option value="Ortodoncia">Ortodoncia</option>
+                            <option value="Otros">Otros</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-12">
+                            <label for="tarifario-precio-soles" style="font-weight: 600;">Precio Soles (S/) *</label>
+                            <input type="number" step="0.01" min="0" id="tarifario-precio-soles" class="form-control" required placeholder="0.00">
+                        </div>
+                        <input type="hidden" id="tarifario-precio-dolares" value="0">
+                    </div>
+                </div>
+                <div class="modal-footer" style="margin-top: 15px;">
+                    <button type="button" class="btn btn-outline" onclick="closeTarifarioModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Procedimiento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    
+    <div id="patient-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="patient-modal-title">Ficha de Admisión de Paciente</h3>
+                <span class="close-btn" onclick="closePatientModal()">&times;</span>
+            </div>
+            <form id="patient-form">
+                <input type="hidden" id="patient-id-field">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="patient-firstname">Nombres *</label>
+                            <input type="text" id="patient-firstname" required placeholder="Nombres del paciente">
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="patient-lastname">Apellidos *</label>
+                            <input type="text" id="patient-lastname" required placeholder="Apellidos del paciente">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="patient-dni">Documento Nacional de Identidad (DNI) *</label>
+                            <input type="text" id="patient-dni" required pattern="^[0-9]{8}$" title="El DNI debe contener exactamente 8 números" placeholder="Ej. 74839201">
+                            <div class="error-feedback hidden" id="patient-dni-error">Este DNI ya está registrado.</div>
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="patient-dob">Fecha de Nacimiento *</label>
+                            <input type="date" id="patient-dob" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="patient-phone">Teléfono Celular *</label>
+                            <input type="tel" id="patient-phone" required placeholder="Ej. 987654321">
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="patient-email">Correo Electrónico *</label>
+                            <input type="email" id="patient-email" required placeholder="nombre@correo.com">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="patient-address">Dirección de Domicilio *</label>
+                        <input type="text" id="patient-address" required placeholder="Dirección completa, distrito">
+                    </div>
+                    <hr>
+                    <h4>Ficha Médica Inicial (Solo Lectura para Asistentes)</h4>
+                    <div class="form-group">
+                        <label for="patient-allergies">Alergias Conocidas (Medicamentos/Materiales) <span class="badge badge-warning">ALERTA</span></label>
+                        <input type="text" id="patient-allergies" placeholder="Ej. Alérgico a la Penicilina y al Látex. Dejar vacío si no aplica.">
+                    </div>
+                    <div class="form-group">
+                        <label for="patient-chronic">Enfermedades Crónicas / Comorbilidades</label>
+                        <input type="text" id="patient-chronic" placeholder="Ej. Hipertensión arterial controlada, Diabetes tipo II">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closePatientModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Registrar y Generar N° Historia</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    
+    <div id="appointment-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="appointment-modal-title">Agendar Cita Dental</h3>
+                <span class="close-btn" onclick="closeAppointmentModal()">&times;</span>
+            </div>
+            
+            
+            <form id="appointment-form">
+                
+                <input type="hidden" id="appointment-date">
+                <input type="hidden" id="appointment-time">
+                <input type="hidden" id="appointment-id-field">
+
+                <div class="modal-body">
+                    <div class="form-group-info" id="appointment-slot-info">
+                        <strong>Fecha:</strong> 2026-07-03 | <strong>Horario:</strong> 09:00 AM - 10:00 AM
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="appointment-patient">Seleccionar Paciente *</label>
+                        <div class="custom-select-wrapper">
+                            <input type="text" id="appointment-patient-search" placeholder="Escriba DNI o Nombre para buscar..." class="form-control" oninput="searchPatientForAppointment()">
+                            <select id="appointment-patient" class="form-control" size="4" required>
+                                
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="appointment-dentist">Odontólogo Tratante *</label>
+                            <select id="appointment-dentist" class="form-control" required>
+                                
+                            </select>
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="appointment-reason">Motivo de Consulta *</label>
+                            <input type="text" id="appointment-reason" required placeholder="Ej. Curación molar, Limpieza, Evaluación">
+                        </div>
+                    </div>
+
+                    <div class="deposit-verification-box alert alert-warning mt-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <strong>Abono de Separación Requerido</strong>
+                                <p class="text-sm m-0">Para confirmar esta reserva, se debe validar el abono del depósito.</p>
+                            </div>
+                            <div class="deposit-toggle-container">
+                                <label class="switch">
+                                    <input type="checkbox" id="appointment-deposit" onchange="toggleDepositValidation()">
+                                    <span class="slider round"></span>
+                                </label>
+                                <span class="deposit-label" id="deposit-status-label">Separación Pagada (S/ 50.00)</span>
+                            </div>
+                        </div>
+                        <div class="error-feedback hidden text-danger mt-2" id="deposit-error-msg">
+                            <i class="fa-solid fa-circle-xmark"></i> Debe activar la verificación de pago (S/ 50.00) para confirmar la cita.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeAppointmentModal()">Cerrar</button>
+                    <button type="submit" class="btn btn-primary" id="btn-save-appointment">Confirmar Cita</button>
+                </div>
+            </form>
+
+            
+            <div id="occupied-appointment-container" class="hidden">
+                
+                <div id="occupied-view-details">
+                    <div class="modal-body">
+                        <div class="form-group-info" id="occupied-slot-info" style="background-color: #f1f5f9; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+                            
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem;">
+                            <div><strong>Paciente:</strong> <span id="view-appt-patient" style="font-weight: 600;">-</span></div>
+                            <div><strong>Odontólogo:</strong> <span id="view-appt-dentist" style="font-weight: 600;">-</span></div>
+                            <div><strong>Motivo:</strong> <span id="view-appt-reason" style="font-weight: 600;">-</span></div>
+                            <div><strong>Abono de Separación:</strong> <span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Pagado (S/ 50.00)</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger-outline" onclick="cancelAppointmentFlow()" style="margin-right: auto;"><i class="fa-solid fa-trash-can"></i> Eliminar Cita</button>
+                        <button type="button" class="btn btn-primary" onclick="showRescheduleMode()"><i class="fa-solid fa-calendar-days"></i> Reprogramar</button>
+                        <button type="button" class="btn btn-outline" onclick="closeAppointmentModal()">Cerrar</button>
+                    </div>
+                </div>
+
+                
+                <form id="reschedule-form" class="hidden">
+                    <div class="modal-body">
+                        <h4 style="margin-bottom: 15px; color: #1e3a8a;"><i class="fa-solid fa-calendar-plus"></i> Seleccionar Nuevo Horario</h4>
+                        
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label for="reschedule-date" style="font-weight: 600;">Nueva Fecha *</label>
+                                <input type="date" id="reschedule-date" class="form-control" required>
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="reschedule-time" style="font-weight: 600;">Nuevo Horario *</label>
+                                <select id="reschedule-time" class="form-control" required>
+                                    <option value="09:00">09:00 AM - 10:00 AM</option>
+                                    <option value="10:00">10:00 AM - 11:00 AM</option>
+                                    <option value="11:00">11:00 AM - 12:00 PM</option>
+                                    <option value="12:00">12:00 PM - 01:00 PM</option>
+                                    <option value="13:00">01:00 PM - 02:00 PM</option>
+                                    <option value="14:00">02:00 PM - 03:00 PM</option>
+                                    <option value="15:00">03:00 PM - 04:00 PM</option>
+                                    <option value="16:00">04:00 PM - 05:00 PM</option>
+                                    <option value="17:00">05:00 PM - 06:00 PM</option>
+                                    <option value="18:00">06:00 PM - 07:00 PM</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mt-2">
+                            <label for="reschedule-dentist" style="font-weight: 600;">Odontólogo Tratante *</label>
+                            <select id="reschedule-dentist" class="form-control" required>
+                                
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline" onclick="showOccupiedViewMode()"><i class="fa-solid fa-arrow-left"></i> Volver</button>
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-calendar-check"></i> Confirmar Cambio</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    
+    <div id="reminder-modal" class="modal">
+        <div class="modal-content modal-md">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-bell"></i> Recordatorio de Cita Odontológica</h3>
+                <span class="close-btn" onclick="closeReminderModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group mb-3">
+                    <label for="reminder-patient-email"><i class="fa-solid fa-envelope"></i> Correo Electrónico del Destinatario</label>
+                    <input type="email" id="reminder-patient-email" class="form-control" placeholder="luisanderson082004@gmail.com">
+                </div>
+
+                <p class="text-muted mb-1" style="font-size: 0.85rem; font-weight: 600;">Información del Recordatorio (Plantilla Email Resend):</p>
+                <div class="template-preview-box mb-3" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px;">
+                    <pre id="reminder-template-text" style="white-space: pre-wrap; word-break: break-word; font-family: inherit; font-size: 0.88rem; line-height: 1.5; color: #334155; margin: 0; max-height: 180px; overflow-y: auto;">Cargando información del recordatorio...</pre>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 8px; justify-content: flex-end;">
+                <button type="button" class="btn btn-outline" onclick="closeReminderModal()">Cancelar</button>
+                <button type="button" class="btn btn-outline" onclick="copyReminderText()"><i class="fa-solid fa-copy"></i> Copiar WhatsApp</button>
+                <button type="button" class="btn btn-primary" id="btn-send-resend-email" onclick="sendResendReminderEmail()"><i class="fa-solid fa-paper-plane"></i> Enviar Email (Resend)</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div id="user-modal" class="modal">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h3 id="user-modal-title">Gestión de Personal</h3>
+                <span class="close-btn" onclick="closeUserModal()">&times;</span>
+            </div>
+            <form id="user-form">
+                <input type="hidden" id="user-id-field">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="user-name">Nombre Completo *</label>
+                        <input type="text" id="user-name" required placeholder="Ej. Dr. Mario Santos">
+                    </div>
+                    <div class="form-group">
+                        <label for="user-username">Nombre de Usuario *</label>
+                        <input type="text" id="user-username" required placeholder="Ej. msantos">
+                    </div>
+                    <div class="form-group">
+                        <label for="user-role">Rol de Acceso *</label>
+                        <select id="user-role" class="form-control" required>
+                            <option value="admin">Administrador</option>
+                            <option value="receptionist">Asistente / Recepcionista</option>
+                            <option value="dentist">Odontólogo / Dentista</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="user-password">Contraseña *</label>
+                        <input type="password" id="user-password" required placeholder="Ingresar contraseña">
+                        <span class="text-xs text-muted" id="user-password-hint">Ingrese una contraseña segura.</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeUserModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Registro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    
+    <div id="shift-modal" class="modal">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h3>Asignación de Turnos de Odontólogos</h3>
+                <span class="close-btn" onclick="closeShiftModal()">&times;</span>
+            </div>
+            <form id="shift-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="shift-dentist">Odontólogo *</label>
+                        <select id="shift-dentist" class="form-control" required>
+                            
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight: 600; display: block; margin-bottom: 8px;">Días Laborales *</label>
+                        <div class="days-checkbox-list" style="display: flex; flex-direction: column; gap: 8px; margin-top: 5px; max-height: 180px; overflow-y: auto; padding: 4px; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f8fafc;">
+                            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; margin: 0; padding: 4px 8px; border-radius: 4px;">
+                                <input type="checkbox" name="shift-days" value="Monday" checked> Lunes
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; margin: 0; padding: 4px 8px; border-radius: 4px;">
+                                <input type="checkbox" name="shift-days" value="Tuesday" checked> Martes
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; margin: 0; padding: 4px 8px; border-radius: 4px;">
+                                <input type="checkbox" name="shift-days" value="Wednesday" checked> Miércoles
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; margin: 0; padding: 4px 8px; border-radius: 4px;">
+                                <input type="checkbox" name="shift-days" value="Thursday" checked> Jueves
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; margin: 0; padding: 4px 8px; border-radius: 4px;">
+                                <input type="checkbox" name="shift-days" value="Friday" checked> Viernes
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; margin: 0; padding: 4px 8px; border-radius: 4px;">
+                                <input type="checkbox" name="shift-days" value="Saturday"> Sábado
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; margin: 0; padding: 4px 8px; border-radius: 4px;">
+                                <input type="checkbox" name="shift-days" value="Sunday"> Domingo
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="shift-start">Hora Entrada *</label>
+                            <select id="shift-start" class="form-control" required>
+                                <option value="09:00">09:00 AM</option>
+                                <option value="10:00">10:00 AM</option>
+                                <option value="11:00">11:00 AM</option>
+                                <option value="12:00">12:00 PM</option>
+                                <option value="13:00">01:00 PM</option>
+                                <option value="14:00">02:00 PM</option>
+                                <option value="15:00">03:00 PM</option>
+                                <option value="16:00">04:00 PM</option>
+                                <option value="17:00">05:00 PM</option>
+                                <option value="18:00">06:00 PM</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="shift-end">Hora Salida *</label>
+                            <select id="shift-end" class="form-control" required>
+                                <option value="10:00">10:00 AM</option>
+                                <option value="11:00">11:00 AM</option>
+                                <option value="12:00">12:00 PM</option>
+                                <option value="13:00">01:00 PM</option>
+                                <option value="14:00">02:00 PM</option>
+                                <option value="15:00">03:00 PM</option>
+                                <option value="16:00">04:00 PM</option>
+                                <option value="17:00">05:00 PM</option>
+                                <option value="18:00">06:00 PM</option>
+                                <option value="19:00">07:00 PM</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeShiftModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Registrar Turno</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    
+    <div id="odontogram-finding-modal" class="modal">
+        <div class="modal-content modal-md">
+            <div class="modal-header">
+                <h3 id="finding-modal-title">Registrar Hallazgo Clínico - COP</h3>
+                <span class="close-btn" onclick="closeFindingModal()">&times;</span>
+            </div>
+            <form id="odontogram-finding-form">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="finding-tooth-display">Pieza Dental</label>
+                            <input type="text" id="finding-tooth-display" class="form-control" readonly>
+                            <input type="hidden" id="finding-tooth-id">
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="finding-surface-display">Superficie / Zona</label>
+                            <input type="text" id="finding-surface-display" class="form-control" readonly>
+                            <input type="hidden" id="finding-surface-name">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="finding-type-select">Tipo de Hallazgo (Norma COP) *</label>
+                        <select id="finding-type-select" class="form-control" required>
+                            <option value="">-- Seleccione el hallazgo --</option>
+                            <optgroup label="Superficies Dentales">
+                                <option value="C">1.3 Caries (C)</option>
+                                <option value="R">1.28 Restauración Definitiva (R)</option>
+                                <option value="RT">1.29 Restauración Temporal (RT)</option>
+                                <option value="S">Sellante Preventivo (S)</option>
+                            </optgroup>
+                            <optgroup label="Aparatos Ortodónticos">
+                                <option value="AOF">1.1 Aparato Ortodóntico Fijo (AOF)</option>
+                                <option value="AOR">1.2 Aparato Ortodóntico Removible (AOR)</option>
+                            </optgroup>
+                            <optgroup label="Estructuras y Prótesis (Toda la Pieza)">
+                                <option value="A">1.8 Diente Ausente (A)</option>
+                                <option value="CD">1.4 Corona Definitiva (CD)</option>
+                                <option value="CT">1.5 Corona Temporal (CT)</option>
+                                <option value="PF">1.24 Prótesis Fija (PF)</option>
+                                <option value="PR">1.25 Prótesis Removible (PR)</option>
+                                <option value="PT">1.26 Prótesis Total (PT)</option>
+                                <option value="EDT">1.14 Edéntulo Total (EDT)</option>
+                            </optgroup>
+                            <optgroup label="Anomalías y Posición">
+                                <option value="DES">1.6 Desgaste Oclusal/Incisal (DES)</option>
+                                <option value="DIA">1.7 Diastema (DIA)</option>
+                                <option value="DIS">1.9 Diente Discromico (DIS)</option>
+                                <option value="ECT">1.10 Diente Ectópico (ECT)</option>
+                                <option value="CLV">1.11 Diente en Clavija (CLV)</option>
+                                <option value="EXT">1.12 Diente Extruido (EXT)</option>
+                                <option value="INT">1.13 Diente Intruido (INT)</option>
+                                <option value="GEM">1.16 Geminación/Fusión (GEM)</option>
+                                <option value="GIR">1.17 Giroversión (GIR)</option>
+                                <option value="IMPAC">1.18 Impactación (IMPAC)</option>
+                                <option value="IMP">1.19 Implante (IMP)</option>
+                                <option value="MAC">1.20 Macrodoncia (MAC)</option>
+                                <option value="MIC">1.21 Microdoncia (MIC)</option>
+                                <option value="MIG">1.22 Migración (MIG)</option>
+                                <option value="MOV">1.23 Movilidad (MOV)</option>
+                                <option value="SI">1.30 Semi-impactación (SI)</option>
+                                <option value="SUP">1.31 Supernumerario (SUP)</option>
+                                <option value="TRA">1.32 Transposición (TRA)</option>
+                            </optgroup>
+                            <optgroup label="Raíces, Pulpa y Traumas">
+                                <option value="RR">1.27 Remanente Radicular (RR)</option>
+                                <option value="TP">1.33 Tratamiento Pulpar (TP)</option>
+                                <option value="FRA">1.15 Fractura (FRA)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="finding-state-select">Estado del Hallazgo *</label>
+                        <select id="finding-state-select" class="form-control" required>
+                            <option value="true">Buen estado / Tratamiento Existente (Color Azul)</option>
+                            <option value="false">Mal estado / Requerido / Patología Activa (Color Rojo)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="finding-specifications">Especificaciones Clínicas (Obligatorio) *</label>
+                        <textarea id="finding-specifications" class="form-control" rows="3" placeholder="Detalle el estado clínico de la pieza, materiales o justificación diagnóstica..." required></textarea>
+                    </div>
+                    <div class="alert alert-info py-2" style="font-size: 0.8rem; display: flex; align-items: center; gap: 8px; font-weight: 600;">
+                        <i class="fa-solid fa-signature"></i>
+                        <span>Este registro se firmará digitalmente a nombre del profesional logueado para fines de trazabilidad legal.</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeFindingModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-signature"></i> Firmar y Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    
+    <div id="print-iframe-container" style="display: none;"></div>
+
+    <script type="module" src="./src/main.js"></script>
+</body>
+</html>

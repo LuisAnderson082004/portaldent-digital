@@ -1,0 +1,10 @@
+{
+  "name": "portaldent-digital",
+  "version": "1.0.6",
+  "description": "Portal Dentistas - Dental Clinic Management Platform",
+  "main": "index.html",
+  "scripts": {},
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.7"
+  }
+}

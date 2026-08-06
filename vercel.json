@@ -1,0 +1,6 @@
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/api/send-reminder", "destination": "/api/send-reminder.js" }
+  ]
+}

@@ -1,0 +1,488 @@
+/* odontogram.css - Clinical EHR Layout & Interactive Teeth Charts */
+
+#view-odontogram {
+    padding-top: 0.5rem !important;
+}
+
+#view-odontogram .odontogram-help {
+    margin-top: 0.4rem !important;
+    margin-bottom: 0.4rem !important;
+}
+
+.ehr-container {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 2rem;
+    align-items: start;
+    flex-grow: 1;
+}
+
+.ehr-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.ehr-sidebar .card {
+    margin-bottom: 0 !important;
+}
+
+.patient-selector-card select {
+    width: 100%;
+    margin-top: 0.5rem;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    margin-top: 0.75rem;
+}
+
+.detail-full {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.85rem;
+}
+
+.detail-full p {
+    margin-top: 0.25rem;
+}
+
+/* Medical Alert Card */
+.alert-card {
+    background-color: var(--danger-light);
+    border: 2px solid var(--danger-color);
+    border-radius: 12px;
+    padding: 1.25rem;
+    color: var(--text-dark);
+    margin-bottom: 0 !important;
+    box-shadow: var(--shadow-md);
+    animation: pulseBorder 2s infinite alternate;
+}
+
+.alert-card-header {
+    font-weight: 700;
+    color: var(--danger-color);
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.alert-card-body {
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+/* Clinical notes timeline */
+.notes-timeline {
+    max-height: 380px;
+    overflow-y: auto;
+    margin-top: 1.5rem;
+    padding-right: 0.25rem;
+}
+
+.timeline-item {
+    border-left: 2px solid var(--primary-color);
+    padding-left: 1rem;
+    margin-bottom: 1.25rem;
+    position: relative;
+}
+
+.timeline-item::before {
+    content: "";
+    position: absolute;
+    left: -6px;
+    top: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    border: 2px solid var(--bg-white);
+}
+
+.timeline-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.timeline-content {
+    font-size: 0.85rem;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.timeline-author {
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-top: 0.25rem;
+    color: var(--text-dark);
+}
+
+/* Interactive Odontogram Design */
+.odontogram-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.4rem;
+}
+
+.odontogram-help {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.odontogram-canvas {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 0.5rem 0.5rem;
+    align-items: center;
+    overflow-x: auto;
+}
+
+.teeth-row-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.teeth-row-group.child-row {
+    background-color: #f0f9ff;
+    padding: 0.4rem;
+    border-radius: 8px;
+    border: 1px dashed rgba(14, 165, 233, 0.3);
+}
+
+.row-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.teeth-row {
+    display: flex;
+    gap: 3px;
+    justify-content: center;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+}
+
+/* Lower arch rows: roots point UP, so align to top */
+#odontogram-child-lower,
+#odontogram-adult-lower {
+    align-items: flex-start;
+}
+
+.tooth-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    width: 50px;
+    padding: 2px;
+    border-radius: 4px;
+    transition: background-color var(--transition-fast);
+}
+
+.tooth-block:hover {
+    background-color: var(--bg-light);
+}
+
+.tooth-number {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+/* SVG interactive segments */
+.tooth-svg {
+    border-radius: 4px;
+    overflow: visible;
+}
+
+.surface {
+    fill: #ffffff;
+    stroke: #94a3b8;
+    stroke-width: 1.5;
+    cursor: pointer;
+    transition: fill var(--transition-fast);
+}
+
+.surface:hover {
+    fill: #e2e8f0;
+}
+
+/* Color Coding for surfaces */
+.surface.curation-filled {
+    fill: #3b82f6 !important; /* Blue for curations */
+    stroke: #1d4ed8;
+}
+
+.surface.sealant-filled {
+    fill: #10b981 !important; /* Green for sealants */
+    stroke: #047857;
+}
+
+.surface.pathology-filled {
+    fill: #ef4444 !important; /* Red for pathologies */
+    stroke: #b91c1c;
+}
+
+/* Absent / Extracted Tooth styling */
+.tooth-block.absent .surface {
+    fill: #cbd5e1 !important;
+    stroke: #94a3b8 !important;
+    cursor: not-allowed;
+}
+
+.tooth-block.absent .tooth-svg {
+    position: relative;
+}
+
+/* Tooth SVG wrapper - size set dynamically per tooth */
+.tooth-svg-wrapper {
+    position: relative;
+}
+
+/* Root styling */
+.tooth-root {
+    pointer-events: none;
+}
+
+/* Absent cross lines - hidden by default */
+.absent-line {
+    display: none;
+    pointer-events: none;
+}
+
+.tooth-block.absent .absent-line {
+    display: inline;
+}
+
+.tooth-block.absent .tooth-root {
+    opacity: 0.3;
+}
+
+.tooth-block.selected-tooth {
+    background-color: var(--primary-light);
+    outline: 2px solid var(--primary-color);
+}
+
+/* Treatment panel layout */
+.treatment-selection-panel {
+    background-color: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.25rem;
+}
+
+.treatment-selection-panel h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+}
+
+.selection-row {
+    display: flex;
+    gap: 1rem;
+}
+
+.select-inline {
+    flex: 1;
+}
+
+.export-card {
+    border: 1px solid var(--border-color);
+}
+
+.card-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+@keyframes pulseBorder {
+    0% {
+        border-color: var(--danger-color);
+        box-shadow: 0 0 0 0px rgba(239, 68, 68, 0.4);
+    }
+    100% {
+        border-color: #b91c1c;
+        box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    }
+}
+
+@media (max-width: 1024px) {
+    .ehr-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Searchable Patient Dropdown for EHR */
+.searchable-select {
+    position: relative;
+    width: 100%;
+}
+
+#ehr-patient-search {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.85rem 2.2rem 0.85rem 1.25rem;
+    font-size: 0.95rem;
+    border-radius: 10px;
+    border: 1.5px solid var(--border-color);
+    transition: all var(--transition-fast);
+}
+
+#ehr-patient-search:focus {
+    background-color: #f0f9ff;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px var(--primary-light);
+}
+
+.search-results-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    max-height: 250px;
+    overflow-y: auto;
+    background-color: var(--bg-white);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-md);
+    z-index: 999;
+    margin-top: 4px;
+}
+
+.search-results-dropdown.hidden {
+    display: none;
+}
+
+.search-result-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color var(--transition-fast);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+    background-color: var(--bg-white);
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover {
+    background-color: var(--primary-light);
+}
+
+.search-result-name {
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+.search-result-dni {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background-color: var(--bg-light);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.search-clear-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--transition-fast);
+}
+
+.search-clear-btn:hover {
+    color: var(--danger-color);
+}
+
+/* Color overrides for COP standard */
+.surface.curation-filled {
+    fill: #0043c7 !important; /* COP Standard Blue */
+    stroke: #002b80;
+}
+
+.surface.pathology-filled {
+    fill: #ef4444 !important; /* COP Standard Red */
+    stroke: #b91c1c;
+}
+
+/* Restrictive overlays */
+.tooth-block.absent .tooth-root {
+    opacity: 0.15;
+}
+
+/* Finding modal customizations */
+#odontogram-finding-modal .modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+#odontogram-finding-modal label {
+    font-weight: 600;
+}
+
+.tooth-svg text {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* GPU Rendering Accelerations */
+.tooth-block, .tooth-svg-wrapper {
+    will-change: transform, opacity;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+}
+
+/* Treatment Plan View Styles */
+#view-treatment-plan .odontogram-canvas {
+    pointer-events: none;
+    opacity: 0.9;
+}
+
+.treatment-plan-split {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+@media (max-width: 1024px) {
+    .treatment-plan-split {
+        grid-template-columns: 1fr;
+    }
+}
