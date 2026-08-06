@@ -479,6 +479,10 @@ document.getElementById('shift-form').addEventListener('submit', async (e) => {
         alert("Error de Horario: La hora de salida debe ser posterior a la hora de entrada.");
         return;
     }
+    if (startHour < 9 || endHour > 19) {
+        alert("Error de Horario: El bloque horario ingresado debe estar estrictamente dentro del rango de atención de la clínica (de 9:00 a.m. a 7:00 p.m.).");
+        return;
+    }
 
     const selectedDays = Array.from(document.querySelectorAll('input[name="shift-days"]:checked')).map(cb => cb.value);
     if (selectedDays.length === 0) {
@@ -601,19 +605,8 @@ function renderPatientsList() {
             } catch (err) {
                 console.error("Error loading patient clinical data for profile view:", err.message);
             }
-            if (appState.currentUser.role === 'receptionist') {
-                if (!patient.evolutionNotes || patient.evolutionNotes.length === 0) {
-                    alert("No se puede exportar el resumen clínico porque el paciente aún no cuenta con notas de evolución.");
-                } else {
-                    exportPatientPDFDirect(patient.id, appState);
-                }
-            } else {
-                appState.selectedPatientId = patient.id;
-                populateEHRSelector();
-                document.getElementById('ehr-patient-select').value = patient.id;
-                await loadEHRForPatient();
-                switchView('odontogram');
-            }
+            appState.selectedPatientId = patient.id;
+            exportPatientPDFDirect(patient.id, appState);
         };
         
         tbody.appendChild(tr);
