@@ -194,6 +194,14 @@ function switchView(viewId) {
 
 
 
+async function refreshAppStateData() {
+    try { appState.users = await getUsers(); } catch (err) { appState.users = []; }
+    try { appState.patients = await getPatients(); } catch (err) { appState.patients = []; }
+    try { appState.shifts = await getShifts(); } catch (err) { appState.shifts = []; }
+    try { appState.appointments = await getAppointments(); } catch (err) { appState.appointments = []; }
+    try { appState.treatmentsCatalog = await getTreatmentsCatalog(); } catch (err) { appState.treatmentsCatalog = []; }
+}
+
 document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-login-submit');
@@ -220,6 +228,8 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
             appState.currentUser = matched;
             sessionStorage.setItem('portaldent_session', JSON.stringify(matched));
             
+            await refreshAppStateData();
+
             document.getElementById('login-screen').classList.remove('active');
             document.getElementById('main-workspace').classList.add('active');
             
@@ -2157,11 +2167,7 @@ window.showOccupiedViewMode = showOccupiedViewMode;
 
 
 async function bootstrap() {
-    try { appState.users = await getUsers(); } catch (err) { appState.users = []; }
-    try { appState.patients = await getPatients(); } catch (err) { appState.patients = []; }
-    try { appState.shifts = await getShifts(); } catch (err) { appState.shifts = []; }
-    try { appState.appointments = await getAppointments(); } catch (err) { appState.appointments = []; }
-    try { appState.treatmentsCatalog = await getTreatmentsCatalog(); } catch (err) { appState.treatmentsCatalog = []; }
+    await refreshAppStateData();
 
     startSimulatedClock();
 
@@ -2169,6 +2175,8 @@ async function bootstrap() {
     const session = checkSession();
     if (session) {
         appState.currentUser = session;
+        await refreshAppStateData();
+        
         document.getElementById('login-screen').classList.remove('active');
         document.getElementById('main-workspace').classList.add('active');
         
